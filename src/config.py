@@ -17,7 +17,8 @@ class CustomBaseSettings(BaseSettings):
 class Config(CustomBaseSettings):
     POSTGRES_ASYNC_URL: PostgresDsn
     POSTGRES_TEST_ASYNC_URL: PostgresDsn
-    # REDIS_URL: RedisDsn
+    REDIS_HOST: str
+    REDIS_PORT: int
     ENVIRONMENT: Environment = Environment.PRODUCTION
     APP_VERSION: str = "0.1"
 
@@ -57,6 +58,10 @@ class LogConfig(BaseModel):
     }
     loggers: dict = {
         'root': {
+            'handlers': ['file', 'console'],
+            'propagate': False,
+        },
+        'auth': {
             'handlers': ['file', 'console'],
             'propagate': False,
         }
