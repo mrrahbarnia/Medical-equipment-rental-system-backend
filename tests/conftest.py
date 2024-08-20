@@ -9,7 +9,7 @@ from httpx import AsyncClient, ASGITransport
 from async_asgi_testclient import TestClient # type: ignore
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine, AsyncSession, async_sessionmaker
 
-from src.database import Base, get_session
+from src.database import Base, get_session, get_engine
 from src.config import settings
 from src.main import app
 from src.auth.utils import get_password_hash
@@ -28,6 +28,7 @@ def override_get_session() -> async_sessionmaker[AsyncSession]:
     return async_sessionmaker(test_engine, expire_on_commit=False)
 
 app.dependency_overrides[get_session] = override_get_session
+app.dependency_overrides[get_engine] = override_get_engine
 
 
 @pytest_asyncio.fixture(scope="session")

@@ -20,10 +20,10 @@ class CredentialsException(HTTPException):
         self.headers = {"WWW-Authenticate": "Bearer"}
 
 
-# class IsAdminException(HTTPException):
-#     def __init__(self) -> None:
-#         self.status_code = status.HTTP_401_UNAUTHORIZED
-#         self.detail = "Only admin users can access to this endpoint"
+class IsAdminException(HTTPException):
+    def __init__(self) -> None:
+        self.status_code = status.HTTP_401_UNAUTHORIZED
+        self.detail = "Only admin users can access to this endpoint"
 
 
 class InvalidVerificationCode(HTTPException):

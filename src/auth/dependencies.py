@@ -1,6 +1,6 @@
 import jwt
 
-from typing import Annotated
+from typing import Annotated, Literal
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 from fastapi.security import OAuth2PasswordBearer
@@ -40,9 +40,9 @@ async def get_current_active_user(
     return user
 
 
-# async def is_admin(data: Annotated[dict, Depends(decode_access_token)]) -> Literal[True]:
-#     if "user_rule" not in data:
-#         raise exceptions.CredentialsException
-#     if data["user_rule"] != "admin":
-#         raise exceptions.IsAdminException
-#     return True
+async def is_admin(data: Annotated[dict, Depends(decode_access_token)]) -> Literal[True]:
+    if "user_rule" not in data:
+        raise exceptions.CredentialsException
+    if data["user_rule"] != "admin":
+        raise exceptions.IsAdminException
+    return True
