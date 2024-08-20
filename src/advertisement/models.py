@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from src.database import Base
 from src.advertisement.types import (
-    AdvertisementId, CategoryId, PriceId,
+    AdvertisementId, CategoryId, PriceId, AdvertisementImageId,
     Period, CalendarId, Price as PriceType
 )
 from src.auth.models import User
@@ -75,3 +75,16 @@ class Calendar(Base):
 
     def __repr__(self) -> str:
         return f"{self.id}, advertisement_id{self.advertisement_id}"
+
+
+class AdvertisementImage(Base):
+    __tablename__ = "advertisement_images"
+    id: so.Mapped[AdvertisementImageId] = so.mapped_column(primary_key=True, autoincrement=True)
+    url: so.Mapped[str] = so.mapped_column(sa.String(250))
+
+    advertisement_id: so.Mapped[AdvertisementId] = so.mapped_column(sa.ForeignKey(
+        f"{Advertisement.__tablename__}.id", ondelete="CASCADE"
+    ), index=True)
+
+    def __repr__(self) -> str:
+        return f"{self.id}"

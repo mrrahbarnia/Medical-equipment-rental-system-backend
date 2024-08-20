@@ -1,7 +1,7 @@
 from typing import Any
 from dotenv import load_dotenv
 
-from pydantic import BaseModel, PostgresDsn, RedisDsn
+from pydantic import BaseModel, PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.constants import Environment # type: ignore
@@ -21,6 +21,10 @@ class Config(CustomBaseSettings):
     REDIS_PORT: int
     ENVIRONMENT: Environment = Environment.PRODUCTION
     APP_VERSION: str = "0.1"
+    BUCKET_NAME: str
+    BUCKET_ENDPOINT: str
+    STORAGE_ACCESS_KEY: str
+    STORAGE_SECRET_KEY: str
 
 
 settings = Config() # type: ignore
@@ -62,6 +66,10 @@ class LogConfig(BaseModel):
             'propagate': False,
         },
         'auth': {
+            'handlers': ['file', 'console'],
+            'propagate': False,
+        },
+        'payment': {
             'handlers': ['file', 'console'],
             'propagate': False,
         }

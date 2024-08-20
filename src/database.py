@@ -27,6 +27,7 @@ class Base(DeclarativeBase):
         advertisement_types.PriceId: INTEGER,
         advertisement_types.Price: Numeric,
         advertisement_types.CalendarId: INTEGER,
+        advertisement_types.AdvertisementImageId: INTEGER,
         datetime: DateTime(timezone=True),
     }
 

@@ -12,3 +12,4 @@ aioredis==2.0.1
 SQLAlchemy==2.0.32
 greenlet==3.0.3
 passlib==1.7.4
+aiobotocore==2.13.2

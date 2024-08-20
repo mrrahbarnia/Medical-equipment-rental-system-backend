@@ -14,4 +14,5 @@ CategoryId = NewType("CategoryId", int)
 PriceId = NewType("PriceId", int)
 Price = NewType("Price", Decimal)
 CalendarId = NewType("CalendarId", int)
+AdvertisementImageId = NewType("AdvertisementImageId", int)
 
