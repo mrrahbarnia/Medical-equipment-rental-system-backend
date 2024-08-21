@@ -18,7 +18,7 @@ class Advertisement(Base):
     id: so.Mapped[AdvertisementId] = so.mapped_column(primary_key=True, default=uuid4)
     title: so.Mapped[str] = so.mapped_column(sa.String(250), index=True)
     description: so.Mapped[str] = so.mapped_column(sa.Text)
-    image: so.Mapped[str | None] = so.mapped_column(sa.String(255))
+    place: so.Mapped[str] = so.mapped_column(sa.Text)
     video: so.Mapped[str | None] = so.mapped_column(sa.String(255))
     approved: so.Mapped[bool] = so.mapped_column(default=False)
     is_deleted: so.Mapped[bool] = so.mapped_column(default=False)

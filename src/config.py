@@ -16,15 +16,16 @@ class CustomBaseSettings(BaseSettings):
 
 class Config(CustomBaseSettings):
     POSTGRES_ASYNC_URL: PostgresDsn
-    POSTGRES_TEST_ASYNC_URL: PostgresDsn
+    POSTGRES_TEST_URL: PostgresDsn
     REDIS_HOST: str
     REDIS_PORT: int
     ENVIRONMENT: Environment = Environment.PRODUCTION
     APP_VERSION: str = "0.1"
     BUCKET_NAME: str
-    BUCKET_ENDPOINT: str
+    S3_ENDPOINT: str
     STORAGE_ACCESS_KEY: str
     STORAGE_SECRET_KEY: str
+    S3_API: str
 
 
 settings = Config() # type: ignore

@@ -15,7 +15,7 @@ router = APIRouter()
     status_code=status.HTTP_204_NO_CONTENT
 )
 async def add_subscription_fee(
-    active_user: Annotated[User, Depends(get_current_active_user)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)]
 ):
-    await service.add_subscription_fee(session=session, user=active_user)
+    await service.add_subscription_fee(session=session, user=current_user)

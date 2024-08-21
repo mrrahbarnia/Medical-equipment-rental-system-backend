@@ -1,3 +1,2 @@
-async-asgi-testclient==1.4.11
-pytest==8.3.2
-pytest-asyncio==0.23.8
+-r base.txt
+

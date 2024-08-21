@@ -16,7 +16,7 @@ from src.auth.utils import get_password_hash
 from src.auth.models import User
 from src.auth.types import Password
 
-TEST_DB_URL: Final[str] = str(settings.POSTGRES_TEST_ASYNC_URL)
+TEST_DB_URL: Final[str] = str(settings.POSTGRES_TEST_URL)
 test_engine = create_async_engine(TEST_DB_URL)
 
 
