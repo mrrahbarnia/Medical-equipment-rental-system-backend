@@ -1,12 +1,14 @@
 from typing import Annotated, Literal
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, AsyncEngine
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, status, Query, Depends
 
 from src.database import get_session, get_engine
 from src.pagination import PaginatedResponse, PaginationQuerySchema, pagination_query
 from src.admin import schemas
 from src.admin import service
 from src.auth.dependencies import is_admin
+from src.auth.types import PhoneNumber
+from src.advertisement.types import AdvertisementId
 
 router = APIRouter()
 
@@ -93,3 +95,59 @@ async def update_category_by_slug(
     await service.update_category_by_slug(
         session=session, category_slug=category_slug, payload=payload
     )
+
+
+@router.get(
+    "/all-advertisement/",
+    status_code=status.HTTP_200_OK,
+    response_model=PaginatedResponse[schemas.AllAdvertisement]
+)
+async def get_all_advertisement(
+    engine: Annotated[AsyncEngine, Depends(get_engine)],
+    pagination_info: Annotated[PaginationQuerySchema, Depends(pagination_query)],
+    is_admin: Annotated[Literal[True], Depends(is_admin)],
+    phone_number: Annotated[PhoneNumber | None, Query(alias="phoneNumber")] = None,
+    published: Annotated[bool | None, Query()] = None,
+    is_deleted: Annotated[bool | None, Query(alias="isDeleted")] = None,
+):
+    response = await service.get_all_advertisement(
+        engine=engine, limit=pagination_info.limit, offset=pagination_info.offset,
+        phone_number=phone_number, published=published, is_deleted=is_deleted
+    )
+    return response
+
+
+@router.get(
+    "/publish-advertisement/{advertisement_id}/",
+    status_code=status.HTTP_204_NO_CONTENT
+)
+async def publish_advertisement(
+    advertisement_id: AdvertisementId,
+    is_admin: Annotated[Literal[True], Depends(is_admin)],
+    session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)],
+):
+    await service.publish_advertisement(session=session, advertisement_id=advertisement_id)
+
+
+@router.get(
+    "/unpublish-advertisement/{advertisement_id}/",
+    status_code=status.HTTP_204_NO_CONTENT
+)
+async def unpublish_advertisement(
+    advertisement_id: AdvertisementId,
+    is_admin: Annotated[Literal[True], Depends(is_admin)],
+    session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)],
+):
+    await service.unpublish_advertisement(session=session, advertisement_id=advertisement_id)
+
+
+@router.delete(
+    "/delete-advertisement/",
+    status_code=status.HTTP_204_NO_CONTENT
+)
+async def delete_advertisement(
+    advertisement_id: AdvertisementId,
+    is_admin: Annotated[Literal[True], Depends(is_admin)],
+    session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)],
+):
+    await service.delete_advertisement(session=session, advertisement_id=advertisement_id)

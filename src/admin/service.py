@@ -7,8 +7,11 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession, AsyncEngine
 from src.pagination import paginate
 from src.admin import schemas
 from src.admin import exceptions
-from src.advertisement.types import CategoryId
-from src.advertisement.models import Category
+from src.advertisement.types import CategoryId, AdvertisementId
+from src.advertisement.models import Category, Advertisement, AdvertisementImage
+from src.auth.models import User
+from src.auth.types import PhoneNumber
+from src.s3.utils import delete_from_s3
 
 
 async def add_category(
@@ -119,3 +122,71 @@ async def update_category_by_slug(
             raise exceptions.CategoryNotFound
     except IntegrityError:
         raise exceptions.DuplicateCategoryName
+
+
+async def publish_advertisement(
+        advertisement_id: AdvertisementId,
+        session: async_sessionmaker[AsyncSession],
+):
+    query = sa.update(Advertisement).where(Advertisement.id==advertisement_id).values(
+        {
+            Advertisement.published: True
+        }
+    )
+    async with session.begin() as conn:
+        await conn.execute(query)
+
+
+async def unpublish_advertisement(
+        advertisement_id: AdvertisementId,
+        session: async_sessionmaker[AsyncSession],
+):
+    query = sa.update(Advertisement).where(Advertisement.id==advertisement_id).values(
+        {
+            Advertisement.published: False
+        }
+    )
+    async with session.begin() as conn:
+        await conn.execute(query)
+
+
+async def get_all_advertisement(
+        engine: AsyncEngine, limit: int, offset: int, phone_number: PhoneNumber | None,
+        published: bool | None, is_deleted: bool | None,
+) -> dict:
+    query = sa.select(
+        Advertisement.id, Advertisement.published, Advertisement.is_deleted, User.phone_number
+    ).select_from(Advertisement).join(User, Advertisement.user_id==User.id).order_by(
+        Advertisement.published, Advertisement.is_deleted.desc()
+    )
+    if phone_number:
+        query = query.where(User.phone_number==phone_number)
+    if published or published is False:
+        query = query.where(Advertisement.published==published)
+    if is_deleted or is_deleted is False:
+        query = query.where(Advertisement.is_deleted==is_deleted)
+
+    return await paginate(engine=engine, query=query, limit=limit, offset=offset)
+
+
+async def delete_advertisement(
+        advertisement_id: AdvertisementId,
+        session: async_sessionmaker[AsyncSession]
+):
+    query = sa.delete(Advertisement).where(Advertisement.id==advertisement_id).returning(
+        Advertisement.video
+    )
+    image_query = sa.select(AdvertisementImage.url).where(
+        AdvertisementImage.advertisement_id==advertisement_id
+    )
+    async with session.begin() as conn:
+        image_names: list[str] = list((await conn.scalars(image_query)).all())
+        video_name: str | None = await conn.scalar(query)
+        print(video_name)
+        print(image_names)
+
+    if video_name:
+        await delete_from_s3(video_name)
+
+    for image_name in image_names:
+        await delete_from_s3(image_name)

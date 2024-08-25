@@ -43,3 +43,9 @@ class AdvertisementImageLimit(HTTPException):
     def __init__(self) -> None:
         self.status_code = status.HTTP_400_BAD_REQUEST
         self.detail = f"Advertisement at least has {advertisement_settings.ADVERTISEMENT_IMAGES_LIMIT} images!"
+
+
+class DuplicateSelectedDays(HTTPException):
+    def __init__(self) -> None:
+        self.status_code = status.HTTP_400_BAD_REQUEST
+        self.detail = "Selected days must be unique per each advertisement!"

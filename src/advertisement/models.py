@@ -1,13 +1,13 @@
 import sqlalchemy as sa
 import sqlalchemy.orm as so
 
+from sqlalchemy.schema import UniqueConstraint
 from datetime import datetime, date
 from uuid import uuid4
 
 from src.database import Base
 from src.advertisement.types import (
-    AdvertisementId, CategoryId, PriceId, AdvertisementImageId,
-    Period, CalendarId, Price as PriceType
+    AdvertisementId, CategoryId, AdvertisementImageId, CalendarId, Price
 )
 from src.auth.models import User
 from src.auth.types import UserId
@@ -19,8 +19,13 @@ class Advertisement(Base):
     title: so.Mapped[str] = so.mapped_column(sa.String(250), index=True)
     description: so.Mapped[str] = so.mapped_column(sa.Text)
     place: so.Mapped[str] = so.mapped_column(sa.Text)
+    views: so.Mapped[int] = so.mapped_column(default=0)
     video: so.Mapped[str | None] = so.mapped_column(sa.String(255))
-    approved: so.Mapped[bool] = so.mapped_column(default=False)
+    hour_price: so.Mapped[Price | None]
+    day_price: so.Mapped[Price | None]
+    week_price: so.Mapped[Price | None]
+    month_price: so.Mapped[Price | None]
+    published: so.Mapped[bool] = so.mapped_column(default=False)
     is_deleted: so.Mapped[bool] = so.mapped_column(default=False)
     created_at: so.Mapped[datetime] = so.mapped_column(default=sa.func.now())
 
@@ -50,22 +55,9 @@ class Category(Base):
         return f"{self.id} {self.name}"
 
 
-class Price(Base):
-    __tablename__ = "prices"
-    id: so.Mapped[PriceId] = so.mapped_column(primary_key=True, autoincrement=True)
-    period: so.Mapped[Period]
-    price: so.Mapped[PriceType]
-
-    advertisement_id: so.Mapped[AdvertisementId] = so.mapped_column(sa.ForeignKey(
-        f"{Advertisement.__tablename__}.id", ondelete="CASCADE"
-    ))
-
-    def __repr__(self) -> str:
-        return f"{self.id}, advertisement_id{self.advertisement_id}"
-
-
 class Calendar(Base):
     __tablename__ = "calendars"
+    __table_args__ = (UniqueConstraint("advertisement_id", "day"), )
     id: so.Mapped[CalendarId] = so.mapped_column(primary_key=True, autoincrement=True)
     day: so.Mapped[date]
 

@@ -1,8 +1,10 @@
-from typing import Annotated, Optional, Union
-from fastapi import APIRouter, status, Depends, UploadFile, Form, File
-from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
+from typing import Annotated
 
-from src.database import get_session
+from fastapi import APIRouter, status, UploadFile, Query, Depends
+from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession, AsyncEngine
+
+from src.database import get_session, get_engine
+from src.pagination import PaginatedResponse, pagination_query, PaginationQuerySchema
 from src.advertisement import service
 from src.advertisement.dependencies import check_subscription_fee
 from src.advertisement import schemas
@@ -13,28 +15,48 @@ router = APIRouter()
 
 @router.post(
     "/add-advertisement/",
-    status_code=status.HTTP_201_CREATED,
-    # response_model=schemas.AdvertisementOut
+    status_code=status.HTTP_201_CREATED
 )
 async def add_advertisement(
-    title: Annotated[str, Form()],
-    description: Annotated[str, Form()],
-    place: Annotated[str, Form()],
-    category_name: Annotated[str, Form(alias="categoryName", validation_alias="categoryName")],
+    payload: schemas.AdvertisementIn,
     session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)],
     current_user: Annotated[User, Depends(check_subscription_fee)],
     images: list[UploadFile],
     video: UploadFile | None = None,
-):
+) -> dict:
     await service.add_advertisement(
-        session=session, title=title, description=description,
-        place=place, user=current_user, video_size=video.size if video else None,
-        video_format=video.content_type if video else None,
-        video_filename=video.filename if video else None,
-        video_file=video.file if video else None,
-        images=images,
-        category_name=category_name
+        session=session,
+        user=current_user,
+        payload=payload,
+        video=video,
+        images=images
     )
     return {
-        "title": title, "description": description, "place": place
+        "title": payload.title, "description": payload.description, "place": payload.place
     }
+
+
+@router.get(
+    "/published-advertisement/",
+    status_code=status.HTTP_200_OK,
+    response_model=PaginatedResponse[schemas.PublishedAdvertisement],
+)
+async def get_published_advertisement(
+    engine: Annotated[AsyncEngine, Depends(get_engine)],
+    pagination_info: Annotated[PaginationQuerySchema, Depends(pagination_query)],
+    title__icontains: Annotated[str | None, Query(alias="titleIcontains", max_length=250)] = None,
+    description__icontains: Annotated[str | None, Query(alias="descriptionIcontains")] = None,
+    place__icontains: Annotated[str | None, Query(alias="placeIcontains")] = None,
+    hour_price__range: Annotated[str | None, Query(alias="hourPriceRange")] = None,
+    day_price__range: Annotated[str | None, Query(alias="dayPriceRange")] = None,
+    week_price__range: Annotated[str | None, Query(alias="weekPriceRange")] = None,
+    month_price__range: Annotated[str | None, Query(alias="monthPriceRange")] = None,
+):
+    response = await service.get_published_advertisement(
+        engine=engine, limit=pagination_info.limit, offset=pagination_info.offset,
+        title__icontains=title__icontains, description__icontains=description__icontains,
+        place__icontains=place__icontains, hour_price__range=hour_price__range,
+        day_price__range=day_price__range, week_price__range=week_price__range,
+        month_price__range=month_price__range
+    )
+    return response
