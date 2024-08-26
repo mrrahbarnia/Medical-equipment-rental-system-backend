@@ -103,3 +103,13 @@ async def get_advertisement(
         session=session, advertisement_id=advertisement_id
     )
     return result
+
+
+@router.get(
+    "/show-phone-number/",
+    status_code=status.HTTP_204_NO_CONTENT
+)
+async def show_phone_number(
+    current_user: Annotated[User, Depends(get_current_active_user)]
+) -> None:
+    await service.show_phone_number(user=current_user)

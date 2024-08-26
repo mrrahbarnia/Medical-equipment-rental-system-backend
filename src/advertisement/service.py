@@ -2,11 +2,13 @@ import os
 import sqlalchemy as sa
 
 from uuid import uuid4
-from typing import BinaryIO
+from typing import BinaryIO, cast
 from fastapi import UploadFile
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, AsyncEngine
 
+from src.config import settings
+from src.database import get_redis_connection
 from src.pagination import paginate
 from src.advertisement import exceptions
 from src.advertisement import schemas
@@ -223,4 +225,31 @@ async def get_advertisement(
         "days": set([d.day for d in result]),
         "category_name": result[0].category_name
     }
-    
+
+
+async def show_phone_number(user: User) -> None:
+    redis = get_redis_connection()
+    r = redis.mget(keys=[f"{user.id}:hourly_rate", f"{user.id}:daily_rate"])
+    if r[1] and int(r[1]) >= settings.REQUEST_PER_DAY: # type: ignore
+        raise exceptions.DailyRateLimit
+    if r[0] and int(r[0]) >= settings.REQUEST_PER_HOUR: # type: ignore
+        raise exceptions.HourlyRateLimit 
+    with redis.pipeline() as pipe:
+        pipe.multi()
+        if not r[0]: # type: ignore
+            pipe.set(
+                name=f"{user.id}:hourly_rate",
+                value="1" if not r[0] else str(int(r[0]) + 1), # type: ignore
+                ex=3600
+            )
+        else:
+            pipe.incr(name=f"{user.id}:hourly_rate")
+        if not r[1]: # type: ignore
+            pipe.set(
+                name=f"{user.id}:daily_rate",
+                value="1" if not r[1] else str(int(r[1]) + 1), # type: ignore
+                ex=86400
+            )
+        else:
+            pipe.incr(name=f"{user.id}:daily_rate")
+        pipe.execute()

@@ -1,5 +1,6 @@
 from fastapi import HTTPException, status
 
+from src.config import settings
 from src.advertisement.config import advertisement_settings
 
 
@@ -61,3 +62,15 @@ class AdvertisementNotFound(HTTPException):
     def __init__(self) -> None:
         self.status_code = status.HTTP_404_NOT_FOUND
         self.detail = "Advertisement not found!"
+
+
+class DailyRateLimit(HTTPException):
+    def __init__(self) -> None:
+        self.status_code = status.HTTP_403_FORBIDDEN
+        self.detail = f"Daily rate limit exceeded!({settings.REQUEST_PER_DAY} PER DAY)"
+
+
+class HourlyRateLimit(HTTPException):
+    def __init__(self) -> None:
+        self.status_code = status.HTTP_403_FORBIDDEN
+        self.detail = f"Hourly rate limit exceeded!({settings.REQUEST_PER_HOUR} PER HOUR)"

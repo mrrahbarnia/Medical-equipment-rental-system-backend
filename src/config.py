@@ -26,6 +26,8 @@ class Config(CustomBaseSettings):
     STORAGE_ACCESS_KEY: str
     STORAGE_SECRET_KEY: str
     S3_API: str
+    REQUEST_PER_HOUR: int
+    REQUEST_PER_DAY: int
 
 
 settings = Config() # type: ignore
