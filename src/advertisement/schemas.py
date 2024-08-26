@@ -8,6 +8,7 @@ from pydantic import BaseModel, ValidationInfo, Field, field_validator, model_va
 from src.schemas import CustomBaseModel
 from src.config import settings
 from src.advertisement import types
+from src.auth.types import PhoneNumber
 
 
 class AdvertisementOut(CustomBaseModel):
@@ -62,6 +63,19 @@ class PublishedAdvertisement(BaseModel):
     title: Annotated[str, Field(max_length=250)]
     description: str
     place: str
+    image: str
+
+    @field_validator("image", mode="after")
+    @classmethod
+    def set_image_url(cls, image: str | None) -> str | None:
+        if image:
+            return f"{settings.S3_API}/{image}"
+        return None
+
+
+class MyAdvertisement(BaseModel):
+    title: Annotated[str, Field(max_length=250)]
+    views: int
     image: str | None = None
 
     @field_validator("image", mode="after")
@@ -71,4 +85,33 @@ class PublishedAdvertisement(BaseModel):
             return f"{settings.S3_API}/{image}"
         return None
 
+
+class AdvertisementDetail(CustomBaseModel):
+    title: Annotated[str, Field(max_length=250)]
+    description: str
+    video: str | None = None
+    place: str
+    hour_price: Annotated[Decimal | None, Field(alias="hourPrice", default=None)]
+    day_price: Annotated[Decimal | None, Field(alias="dayPrice", default=None)]
+    week_price: Annotated[Decimal | None, Field(alias="weekPrice", default=None)]
+    month_price: Annotated[Decimal | None, Field(alias="monthPrice", default=None)]
+    image_urls: set[str]
+    phone_number: Annotated[PhoneNumber, Field(alias="phoneNumber")]
+    days: set[date]
+    category_name: Annotated[str, Field(alias="categoryName")]
+
+    @field_validator("video", mode="after")
+    @classmethod
+    def set_video_url(cls, video: str | None) -> str | None:
+        if video:
+            return f"{settings.S3_API}/{video}"
+        return None
+    
+    @field_validator("image_urls", mode="after")
+    @classmethod
+    def set_image_urls(cls, urls: set[str]) -> set[str]:
+        new_urls = set()
+        for url in urls:
+            new_urls.add(f"{settings.S3_API}/{url}")
+        return new_urls
 

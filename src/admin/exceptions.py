@@ -17,3 +17,9 @@ class CategoryNotFound(HTTPException):
     def __init__(self) -> None:
         self.status_code = status.HTTP_404_NOT_FOUND
         self.detail = "There is no category with the provided info!"
+
+
+class CannotDeleteParentCategory(HTTPException):
+    def __init__(self) -> None:
+        self.status_code = status.HTTP_404_NOT_FOUND
+        self.detail = "Cannot delete parent category with sub categories!"

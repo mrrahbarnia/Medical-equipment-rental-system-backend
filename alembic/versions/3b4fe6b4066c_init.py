@@ -1,8 +1,8 @@
 """init
 
-Revision ID: 06df9a77f98a
+Revision ID: 3b4fe6b4066c
 Revises: 
-Create Date: 2024-08-24 09:50:46.820346
+Create Date: 2024-08-25 11:43:41.498536
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '06df9a77f98a'
+revision: str = '3b4fe6b4066c'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -23,15 +23,13 @@ def upgrade() -> None:
     op.create_table('categories',
     sa.Column('id', sa.INTEGER(), autoincrement=True, nullable=False),
     sa.Column('name', sa.String(length=240), nullable=False),
-    sa.Column('slug', sa.String(length=250), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('parent_category', sa.INTEGER(), nullable=True),
-    sa.ForeignKeyConstraint(['parent_category'], ['categories.id'], name=op.f('fk_categories_parent_category_categories'), ondelete='SET NULL'),
+    sa.ForeignKeyConstraint(['parent_category'], ['categories.id'], name=op.f('fk_categories_parent_category_categories')),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_categories')),
     sa.UniqueConstraint('name', name=op.f('uq_categories_name'))
     )
     op.create_index(op.f('ix_categories_parent_category'), 'categories', ['parent_category'], unique=False)
-    op.create_index(op.f('ix_categories_slug'), 'categories', ['slug'], unique=False)
     op.create_table('users',
     sa.Column('id', sa.INTEGER(), autoincrement=True, nullable=False),
     sa.Column('phone_number', sa.String(length=12), nullable=False),
@@ -95,7 +93,6 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_advertisements_category_id'), table_name='advertisements')
     op.drop_table('advertisements')
     op.drop_table('users')
-    op.drop_index(op.f('ix_categories_slug'), table_name='categories')
     op.drop_index(op.f('ix_categories_parent_category'), table_name='categories')
     op.drop_table('categories')
     # ### end Alembic commands ###

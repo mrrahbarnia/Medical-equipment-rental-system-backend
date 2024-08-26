@@ -21,7 +21,7 @@ async def add_advertisement(
         payload: schemas.AdvertisementIn,
         video: UploadFile | None,
         images: list[UploadFile]
-):
+) -> None:
     # Validating video
     if video:
         assert video.filename is not None
@@ -108,7 +108,7 @@ async def get_published_advertisement(
         description__icontains: str | None, place__icontains: str | None,
         hour_price__range: str | None, day_price__range: str | None,
         week_price__range: str | None, month_price__range: str | None
-):
+) -> dict:
     subquery = sa.select(AdvertisementImage).distinct(AdvertisementImage.advertisement_id).subquery()
     query = sa.select(
         Advertisement.id, Advertisement.title, Advertisement.description, Advertisement.place,
@@ -116,7 +116,9 @@ async def get_published_advertisement(
         Advertisement.month_price, subquery.c.url.label("image")
     ).select_from(Advertisement).join(
         subquery, Advertisement.id==subquery.c.advertisement_id, isouter=True
-    ).where(Advertisement.published == True) # noqa
+    ).where(sa.and_(
+        Advertisement.published == True, Advertisement.is_deleted == False # noqa
+    ))
     if title__icontains:
         query = query.where(Advertisement.title.ilike(f"%{title__icontains}%"))
     if description__icontains:
@@ -141,3 +143,87 @@ async def get_published_advertisement(
         ))
 
     return await paginate(engine=engine, query=query, limit=limit, offset=offset)
+
+
+async def list_my_advertisement(
+        session: async_sessionmaker[AsyncSession],
+        user: User
+):
+    subquery = sa.select(AdvertisementImage.url, AdvertisementImage.advertisement_id).distinct(
+        AdvertisementImage.advertisement_id
+    ).subquery()
+    query = sa.select(
+        Advertisement.title, Advertisement.views, subquery.c.url.label("image")
+    ).select_from(Advertisement).join(
+        subquery, Advertisement.id == subquery.c.advertisement_id
+    ).where(Advertisement.user_id == user.id, Advertisement.is_deleted == False) # noqa
+    async with session.begin() as conn:
+        result = list((await conn.execute(query)).all())
+    return result
+
+
+async def delete_my_advertisement(
+        session: async_sessionmaker[AsyncSession],
+        user: User, advertisement_id: types.AdvertisementId
+) -> None:
+    owner_query = sa.select(Advertisement.id).where(sa.and_(
+            Advertisement.user_id==user.id, Advertisement.id==advertisement_id,
+            Advertisement.published==True, Advertisement.is_deleted==False # noqa
+        )
+    )
+    query = sa.update(Advertisement).where(Advertisement.id==advertisement_id).values(
+        {
+            Advertisement.is_deleted: True
+        }
+    )
+    async with session.begin() as conn:
+        result: types.AdvertisementId | None = await conn.scalar(owner_query)
+        if result is None:
+            raise exceptions.NotOwner
+        await conn.execute(query)
+
+
+async def get_advertisement(
+        session: async_sessionmaker[AsyncSession],
+        advertisement_id: types.AdvertisementId
+):
+    update_views_query = sa.update(Advertisement).where(Advertisement.id==advertisement_id).values(
+        {
+            Advertisement.views: Advertisement.views + 1
+        }
+    )
+    query = sa.select(
+        Advertisement.title, Advertisement.description, Advertisement.video,
+        Advertisement.place, Advertisement.hour_price, Advertisement.day_price,
+        Advertisement.week_price, Advertisement.month_price,
+        AdvertisementImage.url,
+        User.phone_number,
+        Calendar.day,
+        Category.name.label("category_name")
+    ).select_from(Advertisement).join(
+        AdvertisementImage, Advertisement.id==AdvertisementImage.advertisement_id
+    ).join(Calendar, Advertisement.id==Calendar.advertisement_id).join(
+        Category, Advertisement.category_id==Category.id
+    ).join(
+        User, Advertisement.user_id==User.id
+    ).where(
+        sa.and_(
+            Advertisement.id==advertisement_id,
+            Advertisement.published==True, Advertisement.is_deleted==False # noqa
+        )
+    )
+    async with session.begin() as conn:
+        result = (await conn.execute(query)).all()
+        if not result:
+            raise exceptions.AdvertisementNotFound
+        await conn.execute(update_views_query)
+    return {
+        "title": result[0].title, "description": result[0].description, "video": result[0].video,
+        "place": result[0].place, "hour_price": result[0].hour_price, "day_price": result[0].day_price,
+        "week_price": result[0].week_price, "month_price": result[0].month_price,
+        "image_urls": set([image.url for image in result]),
+        "phone_number": result[0].phone_number,
+        "days": set([d.day for d in result]),
+        "category_name": result[0].category_name
+    }
+    

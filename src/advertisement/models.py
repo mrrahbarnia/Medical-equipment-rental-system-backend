@@ -44,11 +44,10 @@ class Category(Base):
     __tablename__ = "categories"
     id: so.Mapped[CategoryId] = so.mapped_column(primary_key=True, autoincrement=True)
     name: so.Mapped[str] = so.mapped_column(sa.String(240), unique=True)
-    slug: so.Mapped[str] = so.mapped_column(sa.String(250), index=True)
     created_at: so.Mapped[datetime] = so.mapped_column(default=sa.func.now())
 
     parent_category: so.Mapped[CategoryId | None] = so.mapped_column(sa.ForeignKey(
-        "categories.id", ondelete="SET NULL"
+        "categories.id"
     ), index=True)
 
     def __repr__(self) -> str:

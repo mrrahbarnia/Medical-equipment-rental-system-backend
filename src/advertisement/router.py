@@ -6,8 +6,10 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession, AsyncEngine
 from src.database import get_session, get_engine
 from src.pagination import PaginatedResponse, pagination_query, PaginationQuerySchema
 from src.advertisement import service
-from src.advertisement.dependencies import check_subscription_fee
 from src.advertisement import schemas
+from src.advertisement.types import AdvertisementId
+from src.advertisement.dependencies import check_subscription_fee
+from src.auth.dependencies import get_current_active_user
 from src.auth.models import User
 
 router = APIRouter()
@@ -51,7 +53,7 @@ async def get_published_advertisement(
     day_price__range: Annotated[str | None, Query(alias="dayPriceRange")] = None,
     week_price__range: Annotated[str | None, Query(alias="weekPriceRange")] = None,
     month_price__range: Annotated[str | None, Query(alias="monthPriceRange")] = None,
-):
+) -> dict:
     response = await service.get_published_advertisement(
         engine=engine, limit=pagination_info.limit, offset=pagination_info.offset,
         title__icontains=title__icontains, description__icontains=description__icontains,
@@ -60,3 +62,45 @@ async def get_published_advertisement(
         month_price__range=month_price__range
     )
     return response
+
+@router.get(
+    "/list/my-advertisement/",
+    status_code=status.HTTP_200_OK,
+    response_model=list[schemas.MyAdvertisement]
+)
+async def list_my_advertisement(
+    session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+):
+    result = await service.list_my_advertisement(session=session, user=current_user)
+    return result
+
+
+@router.delete(
+    "/delete/my-advertisement/{advertisement_id}/",
+    status_code=status.HTTP_204_NO_CONTENT
+)
+async def delete_my_advertisement(
+    advertisement_id: AdvertisementId,
+    session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+) -> None:
+    await service.delete_my_advertisement(
+        session=session, user=current_user, advertisement_id=advertisement_id
+    )
+
+
+@router.get(
+    "/get-advertisement/{advertisement_id}/",
+    status_code=status.HTTP_200_OK,
+    response_model=schemas.AdvertisementDetail
+)
+async def get_advertisement(
+    advertisement_id: AdvertisementId,
+    session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)],
+):
+    result = await service.get_advertisement(
+        session=session, advertisement_id=advertisement_id
+    )
+    # return "OK"
+    return result

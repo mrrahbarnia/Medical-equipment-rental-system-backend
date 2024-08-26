@@ -49,3 +49,15 @@ class DuplicateSelectedDays(HTTPException):
     def __init__(self) -> None:
         self.status_code = status.HTTP_400_BAD_REQUEST
         self.detail = "Selected days must be unique per each advertisement!"
+
+
+class NotOwner(HTTPException):
+    def __init__(self) -> None:
+        self.status_code = status.HTTP_403_FORBIDDEN
+        self.detail = "You only can delete advertisement which is your's, published and also not deleted!"
+
+
+class AdvertisementNotFound(HTTPException):
+    def __init__(self) -> None:
+        self.status_code = status.HTTP_404_NOT_FOUND
+        self.detail = "Advertisement not found!"

@@ -8,7 +8,7 @@ from src.admin import schemas
 from src.admin import service
 from src.auth.dependencies import is_admin
 from src.auth.types import PhoneNumber
-from src.advertisement.types import AdvertisementId
+from src.advertisement.types import AdvertisementId, CategoryId
 
 router = APIRouter()
 
@@ -34,7 +34,6 @@ async def create_category(
 )
 async def search_category_by_name(
     category_name: str,
-    # is_admin: Annotated[Literal[True], Depends(is_admin)],
     session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)]
 ):
     result = await service.search_category_by_name(session=session, category_name=category_name)
@@ -58,42 +57,42 @@ async def list_categories(
 
 
 @router.delete(
-    "/delete-category/{category_slug}/",
+    "/delete-category/{category_id}/",
     status_code=status.HTTP_204_NO_CONTENT
 )
 async def delete_category_by_slug(
-    category_slug: str,
+    category_id: CategoryId,
     is_admin: Annotated[Literal[True], Depends(is_admin)],
     session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)],
 ):
-    await service.delete_category_by_slug(session=session, category_slug=category_slug)
+    await service.delete_category_by_id(session=session, category_id=category_id)
 
 
 @router.get(
-    "/get-category/{category_slug}/",
+    "/get-category/{category_id}/",
     response_model=schemas.Category,
     status_code=status.HTTP_200_OK
 )
-async def get_category_by_slug(
-    category_slug: str,
+async def get_category_by_id(
+    category_id: CategoryId,
     is_admin: Annotated[Literal[True], Depends(is_admin)],
     session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)],
 ):
-    result = (await service.get_category_by_slug(session=session, category_slug=category_slug))._asdict()
+    result = (await service.get_category_by_id(session=session, category_id=category_id))._asdict()
     return {"name":result["name"], "parent_category_name":result["parent_name"]}
 
 @router.put(
-    "/update-category/{category_slug}/",
+    "/update-category/{category_id}/",
     status_code=status.HTTP_204_NO_CONTENT
 )
-async def update_category_by_slug(
-    category_slug: str,
+async def update_category_by_id(
+    category_id: CategoryId,
     payload: schemas.UpdateCategoryIn,
     is_admin: Annotated[Literal[True], Depends(is_admin)],
     session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)],
 ):
-    await service.update_category_by_slug(
-        session=session, category_slug=category_slug, payload=payload
+    await service.update_category_by_id(
+        session=session, category_id=category_id, payload=payload
     )
 
 

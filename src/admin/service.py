@@ -26,7 +26,6 @@ async def add_category(
         query = sa.insert(Category).values(
             {
                 Category.name: payload.name,
-                Category.slug: payload.slug,
                 Category.parent_category: parent_category.id if parent_category else None
             }
         )
@@ -39,7 +38,6 @@ async def add_category(
         query = sa.insert(Category).values(
             {
                 Category.name: payload.name,
-                Category.slug: payload.slug
             }
         )
         try:
@@ -63,31 +61,34 @@ async def all_categories(engine: AsyncEngine, limit: int, offset: int):
     parent_category_table_name = so.aliased(Category)
     parent_category_name = (parent_category_table_name.name).label("parent_name")
     query = (
-        sa.select(Category.name, Category.slug, parent_category_name)
+        sa.select(Category.name, parent_category_name)
         .select_from(Category)
         .join(parent_category_table_name, Category.parent_category==parent_category_table_name.id, isouter=True)
     )
     return await paginate(engine=engine, query=query, limit=limit, offset=offset)
 
 
-async def delete_category_by_slug(
-        session: async_sessionmaker[AsyncSession], category_slug: str
+async def delete_category_by_id(
+        session: async_sessionmaker[AsyncSession], category_id: CategoryId
 ) -> None:
-    query = sa.delete(Category).where(Category.slug==category_slug).returning(Category.id)
-    async with session.begin() as conn:
-        result = (await conn.scalar(query))
-    if result is None:
-        raise exceptions.CategoryNotFound
+    query = sa.delete(Category).where(Category.id==category_id).returning(Category.id)
+    try:
+        async with session.begin() as conn:
+            result = (await conn.scalar(query))
+        if result is None:
+            raise exceptions.CategoryNotFound
+    except IntegrityError:
+        raise exceptions.CannotDeleteParentCategory
 
 
-async def get_category_by_slug(
-        session: async_sessionmaker[AsyncSession], category_slug: str
-) -> sa.Row[tuple[str, str, str]]:
+async def get_category_by_id(
+        session: async_sessionmaker[AsyncSession], category_id: CategoryId
+) -> sa.Row[tuple[str, str]]:
     parent_category_table_name = so.aliased(Category)
     parent_category_name = (parent_category_table_name.name).label("parent_name")
     query = (
-        sa.select(Category.name, Category.slug, parent_category_name)
-        .where(Category.slug==category_slug)
+        sa.select(Category.name, parent_category_name)
+        .where(Category.id==category_id)
         .select_from(Category)
         .join(parent_category_table_name, Category.parent_category==parent_category_table_name.id, isouter=True)
     )
@@ -98,9 +99,9 @@ async def get_category_by_slug(
     return result
 
 
-async def update_category_by_slug(
+async def update_category_by_id(
         session: async_sessionmaker[AsyncSession],
-        category_slug: str, payload: schemas.UpdateCategoryIn
+        category_id: CategoryId, payload: schemas.UpdateCategoryIn
 ):
     if payload.parent_category_name:
         parent_query = sa.select(Category.id).where(Category.name==payload.parent_category_name)
@@ -108,10 +109,9 @@ async def update_category_by_slug(
             result: CategoryId | None = await conn.scalar(parent_query)
         if result is None:
             raise exceptions.InvalidParentCategoryName
-    updated_query = sa.update(Category).where(Category.slug==category_slug).values(
+    updated_query = sa.update(Category).where(Category.id==category_id).values(
         {
             Category.name: payload.name,
-            Category.slug: payload.slug,
             Category.parent_category: result if payload.parent_category_name else None
         }
     ).returning(Category.id)
