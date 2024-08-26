@@ -98,9 +98,8 @@ async def delete_my_advertisement(
 async def get_advertisement(
     advertisement_id: AdvertisementId,
     session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)],
-):
+) -> dict:
     result = await service.get_advertisement(
         session=session, advertisement_id=advertisement_id
     )
-    # return "OK"
     return result

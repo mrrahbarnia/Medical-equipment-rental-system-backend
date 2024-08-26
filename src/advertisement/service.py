@@ -195,11 +195,8 @@ async def get_advertisement(
     query = sa.select(
         Advertisement.title, Advertisement.description, Advertisement.video,
         Advertisement.place, Advertisement.hour_price, Advertisement.day_price,
-        Advertisement.week_price, Advertisement.month_price,
-        AdvertisementImage.url,
-        User.phone_number,
-        Calendar.day,
-        Category.name.label("category_name")
+        Advertisement.week_price, Advertisement.month_price, AdvertisementImage.url,
+        User.phone_number, Calendar.day, Category.name.label("category_name")
     ).select_from(Advertisement).join(
         AdvertisementImage, Advertisement.id==AdvertisementImage.advertisement_id
     ).join(Calendar, Advertisement.id==Calendar.advertisement_id).join(

@@ -150,3 +150,19 @@ async def delete_advertisement(
     session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)],
 ):
     await service.delete_advertisement(session=session, advertisement_id=advertisement_id)
+
+
+@router.get(
+    "/get-advertisement/{advertisement_id}/",
+    status_code=status.HTTP_200_OK,
+    response_model=schemas.AdvertisementDetail
+)
+async def get_advertisement(
+    advertisement_id: AdvertisementId,
+    is_admin: Annotated[Literal[True], Depends(is_admin)],
+    session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)],
+):
+    result = await service.get_advertisement(
+        session=session, advertisement_id=advertisement_id
+    )
+    return result

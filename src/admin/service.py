@@ -8,7 +8,8 @@ from src.pagination import paginate
 from src.admin import schemas
 from src.admin import exceptions
 from src.advertisement.types import CategoryId, AdvertisementId
-from src.advertisement.models import Category, Advertisement, AdvertisementImage
+from src.advertisement.models import Category, Advertisement, AdvertisementImage, Calendar
+from src.advertisement.exceptions import AdvertisementNotFound
 from src.auth.models import User
 from src.auth.types import PhoneNumber
 from src.s3.utils import delete_from_s3
@@ -190,3 +191,48 @@ async def delete_advertisement(
 
     for image_name in image_names:
         await delete_from_s3(image_name)
+
+
+async def get_advertisement(
+        session: async_sessionmaker[AsyncSession],
+        advertisement_id: AdvertisementId
+):
+    update_views_query = sa.update(Advertisement).where(Advertisement.id==advertisement_id).values(
+        {
+            Advertisement.views: Advertisement.views + 1
+        }
+    )
+    query = sa.select(
+        Advertisement.title, Advertisement.description, Advertisement.video,
+        Advertisement.place, Advertisement.hour_price, Advertisement.day_price,
+        Advertisement.week_price, Advertisement.month_price, Advertisement.published,
+        Advertisement.is_deleted, AdvertisementImage.url, User.phone_number,
+        Calendar.day, Category.name.label("category_name")
+    ).select_from(Advertisement).join(
+        AdvertisementImage, Advertisement.id==AdvertisementImage.advertisement_id
+    ).join(Calendar, Advertisement.id==Calendar.advertisement_id).join(
+        Category, Advertisement.category_id==Category.id
+    ).join(
+        User, Advertisement.user_id==User.id
+    ).where(
+        sa.and_(
+            Advertisement.id==advertisement_id
+        )
+    )
+    try:
+        async with session.begin() as conn:
+            result = (await conn.execute(query)).all()
+            if not result:
+                raise AdvertisementNotFound
+            await conn.execute(update_views_query)
+    except Exception as ex:
+        print(ex)
+    return {
+        "title": result[0].title, "description": result[0].description, "video": result[0].video,
+        "place": result[0].place, "hour_price": result[0].hour_price, "day_price": result[0].day_price,
+        "week_price": result[0].week_price, "month_price": result[0].month_price,
+        "image_urls": set([image.url for image in result]),
+        "phone_number": result[0].phone_number, "published": result[0].published,
+        "days": set([d.day for d in result]), "is_deleted": result[0].is_deleted,
+        "category_name": result[0].category_name
+    }
