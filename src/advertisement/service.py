@@ -1,8 +1,9 @@
 import os
 import sqlalchemy as sa
+import sqlalchemy.orm as so
 
 from uuid import uuid4
-from typing import BinaryIO, cast
+from typing import BinaryIO
 from fastapi import UploadFile
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, AsyncEngine
@@ -106,25 +107,28 @@ async def add_advertisement(
 
 
 async def get_published_advertisement(
-        engine: AsyncEngine, limit: int, offset: int, title__icontains: str | None,
-        description__icontains: str | None, place__icontains: str | None,
-        hour_price__range: str | None, day_price__range: str | None,
-        week_price__range: str | None, month_price__range: str | None
-) -> dict:
+        engine: AsyncEngine, limit: int, offset: int, text__icontains: str | None,
+        place__icontains: str | None, hour_price__range: str | None,
+        day_price__range: str | None, week_price__range: str | None,
+        month_price__range: str | None, category_name: str | None
+):
     subquery = sa.select(AdvertisementImage).distinct(AdvertisementImage.advertisement_id).subquery()
     query = sa.select(
         Advertisement.id, Advertisement.title, Advertisement.description, Advertisement.place,
         Advertisement.hour_price, Advertisement.day_price, Advertisement.week_price,
-        Advertisement.month_price, subquery.c.url.label("image")
+        Advertisement.month_price, Category.id, Category.name.label("category_name"), subquery.c.url.label("image")
     ).select_from(Advertisement).join(
         subquery, Advertisement.id==subquery.c.advertisement_id, isouter=True
+    ).join(
+        Category, Advertisement.category_id==Category.id
     ).where(sa.and_(
         Advertisement.published == True, Advertisement.is_deleted == False # noqa
     ))
-    if title__icontains:
-        query = query.where(Advertisement.title.ilike(f"%{title__icontains}%"))
-    if description__icontains:
-        query = query.where(Advertisement.description.ilike(f"%{description__icontains}%"))
+    if text__icontains:
+        query = query.where(sa.or_(
+            Advertisement.title.ilike(f"%{text__icontains}%"),
+            Advertisement.description.ilike(f"%{text__icontains}%")
+        ))
     if place__icontains:
         query = query.where(Advertisement.place.ilike(f"%{place__icontains}%"))
     if hour_price__range:
@@ -143,6 +147,19 @@ async def get_published_advertisement(
         query = query.where(Advertisement.month_price.between(
             float(month_price__range.split(",")[0]), float(month_price__range.split(",")[1])
         ))
+    if category_name:
+        parent_category_table_name = so.aliased(Category)
+        category_subquery = (
+            sa.select(Category.id)
+            .select_from(Category)
+            .join(
+                parent_category_table_name,
+                Category.parent_category==parent_category_table_name.id,
+                isouter=True
+            )
+            .where(sa.or_(Category.name==category_name, parent_category_table_name.name==category_name))
+        ).subquery()
+        query = query.where(Category.id.in_(sa.select(category_subquery)))
 
     return await paginate(engine=engine, query=query, limit=limit, offset=offset)
 

@@ -46,20 +46,20 @@ async def add_advertisement(
 async def get_published_advertisement(
     engine: Annotated[AsyncEngine, Depends(get_engine)],
     pagination_info: Annotated[PaginationQuerySchema, Depends(pagination_query)],
-    title__icontains: Annotated[str | None, Query(alias="titleIcontains", max_length=250)] = None,
-    description__icontains: Annotated[str | None, Query(alias="descriptionIcontains")] = None,
+    text__icontains: Annotated[str | None, Query(alias="textIcontains", max_length=250)] = None,
     place__icontains: Annotated[str | None, Query(alias="placeIcontains")] = None,
     hour_price__range: Annotated[str | None, Query(alias="hourPriceRange")] = None,
     day_price__range: Annotated[str | None, Query(alias="dayPriceRange")] = None,
     week_price__range: Annotated[str | None, Query(alias="weekPriceRange")] = None,
     month_price__range: Annotated[str | None, Query(alias="monthPriceRange")] = None,
-) -> dict:
+    category_name: Annotated[str | None, Query(alias="categoryName")] = None
+):
     response = await service.get_published_advertisement(
         engine=engine, limit=pagination_info.limit, offset=pagination_info.offset,
-        title__icontains=title__icontains, description__icontains=description__icontains,
-        place__icontains=place__icontains, hour_price__range=hour_price__range,
-        day_price__range=day_price__range, week_price__range=week_price__range,
-        month_price__range=month_price__range
+        text__icontains=text__icontains, place__icontains=place__icontains,
+        hour_price__range=hour_price__range, day_price__range=day_price__range,
+        week_price__range=week_price__range, month_price__range=month_price__range,
+        category_name=category_name
     )
     return response
 

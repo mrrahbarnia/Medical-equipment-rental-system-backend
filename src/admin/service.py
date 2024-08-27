@@ -22,28 +22,28 @@ async def add_category(
         parent_query = sa.select(Category).where(Category.name==payload.parent_category_name)
         async with session.begin() as conn:
             parent_category: Category | None = await conn.scalar(parent_query)
-        if parent_category is None:
-            raise exceptions.InvalidParentCategoryName
-        query = sa.insert(Category).values(
-            {
-                Category.name: payload.name,
-                Category.parent_category: parent_category.id if parent_category else None
-            }
-        )
-        try:
-            async with session.begin() as conn:
-                await conn.execute(query)
-        except IntegrityError:
-            raise exceptions.DuplicateCategoryName
+            if parent_category is None:
+                raise exceptions.InvalidParentCategoryName
+            query = sa.insert(Category).values(
+                {
+                    Category.name: payload.name,
+                    Category.parent_category: parent_category.id
+                }
+            )
+            try:
+                async with session.begin() as conn:
+                    await conn.scalars(query)
+            except IntegrityError:
+                raise exceptions.DuplicateCategoryName
     else:
-        query = sa.insert(Category).values(
+        without_parent_query = sa.insert(Category).values(
             {
                 Category.name: payload.name,
             }
         )
         try:
             async with session.begin() as conn:
-                await conn.execute(query)
+                await conn.execute(without_parent_query)
         except IntegrityError:
             raise exceptions.DuplicateCategoryName
         

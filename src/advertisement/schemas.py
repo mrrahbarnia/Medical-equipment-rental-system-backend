@@ -64,6 +64,7 @@ class PublishedAdvertisement(BaseModel):
     description: str
     place: str
     image: str
+    category_name: Annotated[str, Field(serialization_alias="categoryName")]
 
     @field_validator("image", mode="after")
     @classmethod
