@@ -10,6 +10,7 @@ from src.constants import DB_NAMING_CONVENTION
 from src.config import settings
 from src.auth import types as auth_types
 from src.advertisement import types as advertisement_types
+from src.tickets import types as ticket_types
 
 POSTGRES_URL = str(settings.POSTGRES_ASYNC_URL)
 
@@ -27,6 +28,7 @@ class Base(DeclarativeBase):
         advertisement_types.Price: Numeric,
         advertisement_types.CalendarId: INTEGER,
         advertisement_types.AdvertisementImageId: INTEGER,
+        ticket_types.TicketId: INTEGER,
         datetime: DateTime(timezone=True),
     }
 

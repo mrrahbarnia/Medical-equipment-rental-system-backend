@@ -8,8 +8,9 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
 from src.database import Base
-from src.auth import models # noqa
-from src.advertisement import models # noqa
+from src.auth import models as auth_models # noqa
+from src.advertisement import models as advertisement_models # noqa
+from src.tickets import models as tickets_models # noqa
 
 config = context.config
 
