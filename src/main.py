@@ -3,6 +3,7 @@ from logging.config import dictConfig
 
 from typing import AsyncGenerator
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 
@@ -24,6 +25,19 @@ async def lifespan(_application: FastAPI) -> AsyncGenerator:
 
 
 app = FastAPI(**app_configs, lifespan=lifespan)
+
+origins = [
+    "http://127.0.0.1:3000"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=['*'],
+    allow_headers=['*']
+)
+
 app.include_router(router=auth_router.router, prefix="/auth", tags=["auth"])
 app.include_router(router=advertisement_router.router, prefix="/advertisement", tags=["advertisement"])
 app.include_router(router=admin_router.router, prefix="/admin", tags=["admin"])
