@@ -1,8 +1,8 @@
 """init
 
-Revision ID: dfbfb408322d
+Revision ID: bd79289578b0
 Revises: 
-Create Date: 2024-08-27 09:45:43.450222
+Create Date: 2024-09-11 07:25:11.114726
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'dfbfb408322d'
+revision: str = 'bd79289578b0'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -25,7 +25,7 @@ def upgrade() -> None:
     sa.Column('name', sa.String(length=240), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('parent_category', sa.INTEGER(), nullable=True),
-    sa.ForeignKeyConstraint(['parent_category'], ['categories.id'], name=op.f('fk_categories_parent_category_categories')),
+    sa.ForeignKeyConstraint(['parent_category'], ['categories.id'], name=op.f('fk_categories_parent_category_categories'), ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_categories')),
     sa.UniqueConstraint('name', name=op.f('uq_categories_name'))
     )
@@ -47,6 +47,7 @@ def upgrade() -> None:
     sa.Column('password', sa.String(), nullable=False),
     sa.Column('has_subscription_fee', sa.Boolean(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('is_banned', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_users')),
     sa.UniqueConstraint('phone_number', name=op.f('uq_users_phone_number'))

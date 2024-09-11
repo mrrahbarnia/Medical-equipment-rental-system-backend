@@ -1,6 +1,7 @@
 from typing import Annotated
 
-from fastapi import APIRouter, status, UploadFile, Query, Depends
+from datetime import date
+from fastapi import APIRouter, status, UploadFile, Form, Query, Depends
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession, AsyncEngine
 
 from src.database import get_session, get_engine
@@ -106,10 +107,14 @@ async def get_advertisement(
 
 
 @router.get(
-    "/show-phone-number/",
-    status_code=status.HTTP_204_NO_CONTENT
+    "/show-phone-number/{advertisement_id}/",
+    status_code=status.HTTP_200_OK,
+    response_model=schemas.ShowPhoneNumber
 )
 async def show_phone_number(
-    current_user: Annotated[User, Depends(get_current_active_user)]
-) -> None:
-    await service.show_phone_number(user=current_user)
+    advertisement_id: AdvertisementId,
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)],
+) -> dict:
+    phone_number = await service.show_phone_number(session=session, user=current_user, advertisement_id=advertisement_id)
+    return {"phoneNumber": phone_number}

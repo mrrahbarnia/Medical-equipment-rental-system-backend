@@ -75,9 +75,11 @@ class PublishedAdvertisement(BaseModel):
 
 
 class MyAdvertisement(BaseModel):
+    id: types.AdvertisementId
     title: Annotated[str, Field(max_length=250)]
     views: int
     image: str | None = None
+    published: bool
 
     @field_validator("image", mode="after")
     @classmethod
@@ -88,6 +90,7 @@ class MyAdvertisement(BaseModel):
 
 
 class AdvertisementDetail(CustomBaseModel):
+    id: types.AdvertisementId
     title: Annotated[str, Field(max_length=250)]
     description: str
     video: str | None = None
@@ -96,8 +99,7 @@ class AdvertisementDetail(CustomBaseModel):
     day_price: Annotated[Decimal | None, Field(alias="dayPrice", default=None)]
     week_price: Annotated[Decimal | None, Field(alias="weekPrice", default=None)]
     month_price: Annotated[Decimal | None, Field(alias="monthPrice", default=None)]
-    image_urls: set[str]
-    phone_number: Annotated[PhoneNumber, Field(alias="phoneNumber")]
+    image_urls: Annotated[set[str], Field(alias="imageUrls")]
     days: set[date]
     category_name: Annotated[str, Field(alias="categoryName")]
 
@@ -116,3 +118,6 @@ class AdvertisementDetail(CustomBaseModel):
             new_urls.add(f"{settings.S3_API}/{url}")
         return new_urls
 
+
+class ShowPhoneNumber(CustomBaseModel):
+    phone_number: Annotated[PhoneNumber, Field(alias="phoneNumber")]

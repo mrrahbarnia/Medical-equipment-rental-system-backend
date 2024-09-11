@@ -121,8 +121,10 @@ async def get_published_advertisement(
         subquery, Advertisement.id==subquery.c.advertisement_id, isouter=True
     ).join(
         Category, Advertisement.category_id==Category.id
+    ).join(
+        User, Advertisement.user_id==User.id
     ).where(sa.and_(
-        Advertisement.published == True, Advertisement.is_deleted == False # noqa
+        Advertisement.published == True, Advertisement.is_deleted == False, User.is_banned == False # noqa
     ))
     if text__icontains:
         query = query.where(sa.or_(
@@ -172,7 +174,7 @@ async def list_my_advertisement(
         AdvertisementImage.advertisement_id
     ).subquery()
     query = sa.select(
-        Advertisement.title, Advertisement.views, subquery.c.url.label("image")
+        Advertisement.id, Advertisement.title, Advertisement.views, Advertisement.published, subquery.c.url.label("image")
     ).select_from(Advertisement).join(
         subquery, Advertisement.id == subquery.c.advertisement_id
     ).where(Advertisement.user_id == user.id, Advertisement.is_deleted == False) # noqa
@@ -186,8 +188,8 @@ async def delete_my_advertisement(
         user: User, advertisement_id: types.AdvertisementId
 ) -> None:
     owner_query = sa.select(Advertisement.id).where(sa.and_(
-            Advertisement.user_id==user.id, Advertisement.id==advertisement_id,
-            Advertisement.published==True, Advertisement.is_deleted==False # noqa
+            Advertisement.user_id==user.id, Advertisement.id==advertisement_id, 
+            Advertisement.is_deleted==False # noqa
         )
     )
     query = sa.update(Advertisement).where(Advertisement.id==advertisement_id).values(
@@ -212,7 +214,7 @@ async def get_advertisement(
         }
     )
     query = sa.select(
-        Advertisement.title, Advertisement.description, Advertisement.video,
+        Advertisement.id, Advertisement.title, Advertisement.description, Advertisement.video,
         Advertisement.place, Advertisement.hour_price, Advertisement.day_price,
         Advertisement.week_price, Advertisement.month_price, AdvertisementImage.url,
         User.phone_number, Calendar.day, Category.name.label("category_name")
@@ -220,8 +222,6 @@ async def get_advertisement(
         AdvertisementImage, Advertisement.id==AdvertisementImage.advertisement_id
     ).join(Calendar, Advertisement.id==Calendar.advertisement_id).join(
         Category, Advertisement.category_id==Category.id
-    ).join(
-        User, Advertisement.user_id==User.id
     ).where(
         sa.and_(
             Advertisement.id==advertisement_id,
@@ -234,17 +234,18 @@ async def get_advertisement(
             raise exceptions.AdvertisementNotFound
         await conn.execute(update_views_query)
     return {
-        "title": result[0].title, "description": result[0].description, "video": result[0].video,
+        "id": result[0].id, "title": result[0].title, "description": result[0].description, "video": result[0].video,
         "place": result[0].place, "hour_price": result[0].hour_price, "day_price": result[0].day_price,
         "week_price": result[0].week_price, "month_price": result[0].month_price,
         "image_urls": set([image.url for image in result]),
-        "phone_number": result[0].phone_number,
         "days": set([d.day for d in result]),
         "category_name": result[0].category_name
     }
 
 
-async def show_phone_number(user: User) -> None:
+async def show_phone_number(
+        session: async_sessionmaker[AsyncSession], user: User, advertisement_id: types.AdvertisementId
+):
     redis = get_redis_connection()
     r = redis.mget(keys=[f"{user.id}:hourly_rate", f"{user.id}:daily_rate"])
     if r[1] and int(r[1]) >= settings.REQUEST_PER_DAY: # type: ignore
@@ -270,3 +271,11 @@ async def show_phone_number(user: User) -> None:
         else:
             pipe.incr(name=f"{user.id}:daily_rate")
         pipe.execute()
+
+    query = sa.select(User.phone_number).select_from(User).join(
+        Advertisement, User.id==Advertisement.user_id
+    ).where(Advertisement.id==advertisement_id)
+
+    async with session.begin() as conn:
+        phone_number = await conn.scalar(query)
+    return phone_number

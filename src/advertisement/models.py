@@ -47,7 +47,7 @@ class Category(Base):
     created_at: so.Mapped[datetime] = so.mapped_column(default=sa.func.now())
 
     parent_category: so.Mapped[CategoryId | None] = so.mapped_column(sa.ForeignKey(
-        "categories.id"
+        "categories.id", ondelete="SET NULL"
     ), index=True)
 
     def __repr__(self) -> str:

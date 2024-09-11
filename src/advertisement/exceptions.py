@@ -55,7 +55,7 @@ class DuplicateSelectedDays(HTTPException):
 class NotOwner(HTTPException):
     def __init__(self) -> None:
         self.status_code = status.HTTP_403_FORBIDDEN
-        self.detail = "You only can delete advertisement which is your's, published and also not deleted!"
+        self.detail = "You only can delete advertisement which is your's and not deleted before!"
 
 
 class AdvertisementNotFound(HTTPException):

@@ -11,7 +11,8 @@ from src.advertisement.types import CategoryId, AdvertisementId
 from src.advertisement.models import Category, Advertisement, AdvertisementImage, Calendar
 from src.advertisement.exceptions import AdvertisementNotFound
 from src.auth.models import User
-from src.auth.types import PhoneNumber
+from src.auth.exceptions import UserNotFound
+from src.auth.types import PhoneNumber, UserId
 from src.s3.utils import delete_from_s3
 
 
@@ -62,7 +63,7 @@ async def all_categories(engine: AsyncEngine, limit: int, offset: int):
     parent_category_table_name = so.aliased(Category)
     parent_category_name = (parent_category_table_name.name).label("parent_name")
     query = (
-        sa.select(Category.name, parent_category_name)
+        sa.select(Category.id, Category.name, parent_category_name)
         .select_from(Category)
         .join(parent_category_table_name, Category.parent_category==parent_category_table_name.id, isouter=True)
     )
@@ -78,7 +79,8 @@ async def delete_category_by_id(
             result = (await conn.scalar(query))
         if result is None:
             raise exceptions.CategoryNotFound
-    except IntegrityError:
+    except IntegrityError as ex:
+        print(ex)
         raise exceptions.CannotDeleteParentCategory
 
 
@@ -152,11 +154,12 @@ async def unpublish_advertisement(
 
 
 async def get_all_advertisement(
-        engine: AsyncEngine, limit: int, offset: int, phone_number: PhoneNumber | None,
-        published: bool | None, is_deleted: bool | None,
+        engine: AsyncEngine, limit: int, offset: int,
+        phone_number: PhoneNumber | None,
+        published: bool | None, is_deleted: bool | None
 ) -> dict:
     query = sa.select(
-        Advertisement.id, Advertisement.published, Advertisement.is_deleted, User.phone_number
+        Advertisement.id, Advertisement.published, Advertisement.is_deleted, User.phone_number, User.is_banned
     ).select_from(Advertisement).join(User, Advertisement.user_id==User.id).order_by(
         Advertisement.published, Advertisement.is_deleted.desc()
     )
@@ -196,14 +199,9 @@ async def delete_advertisement(
 async def get_advertisement(
         session: async_sessionmaker[AsyncSession],
         advertisement_id: AdvertisementId
-):
-    update_views_query = sa.update(Advertisement).where(Advertisement.id==advertisement_id).values(
-        {
-            Advertisement.views: Advertisement.views + 1
-        }
-    )
+) -> dict:
     query = sa.select(
-        Advertisement.title, Advertisement.description, Advertisement.video,
+        Advertisement.id, Advertisement.title, Advertisement.description, Advertisement.video,
         Advertisement.place, Advertisement.hour_price, Advertisement.day_price,
         Advertisement.week_price, Advertisement.month_price, Advertisement.published,
         Advertisement.is_deleted, AdvertisementImage.url, User.phone_number,
@@ -219,16 +217,12 @@ async def get_advertisement(
             Advertisement.id==advertisement_id
         )
     )
-    try:
-        async with session.begin() as conn:
-            result = (await conn.execute(query)).all()
-            if not result:
-                raise AdvertisementNotFound
-            await conn.execute(update_views_query)
-    except Exception as ex:
-        print(ex)
+    async with session.begin() as conn:
+        result = (await conn.execute(query)).all()
+        if not result:
+            raise AdvertisementNotFound
     return {
-        "title": result[0].title, "description": result[0].description, "video": result[0].video,
+        "id": result[0].id, "title": result[0].title, "description": result[0].description, "video": result[0].video,
         "place": result[0].place, "hour_price": result[0].hour_price, "day_price": result[0].day_price,
         "week_price": result[0].week_price, "month_price": result[0].month_price,
         "image_urls": set([image.url for image in result]),
@@ -236,3 +230,32 @@ async def get_advertisement(
         "days": set([d.day for d in result]), "is_deleted": result[0].is_deleted,
         "category_name": result[0].category_name
     }
+
+
+async def ban_user(
+        phone_number: PhoneNumber,
+        session: async_sessionmaker[AsyncSession],
+) -> None:
+    query = sa.update(User).where(User.phone_number==phone_number).values(
+        {
+            User.is_banned: True
+        }
+    ).returning(User.id)
+    async with session.begin() as conn:
+        user_id: UserId | None = await conn.scalar(query)
+    if not user_id:
+        raise UserNotFound
+
+async def cancel_ban_user(
+        phone_number: PhoneNumber,
+        session: async_sessionmaker[AsyncSession],
+) -> None:
+    query = sa.update(User).where(User.phone_number==phone_number).values(
+        {
+            User.is_banned: False
+        }
+    ).returning(User.id)
+    async with session.begin() as conn:
+        user_id: UserId | None = await conn.scalar(query)
+    if not user_id:
+        raise UserNotFound

@@ -37,6 +37,8 @@ async def get_current_active_user(
     user: User = await service.get_user_by_id(id=user_id, session=session)
     if user.is_active is False:
         raise exceptions.NotActiveUser
+    if user.is_banned:
+        raise exceptions.UserIsBanned
     return user
 
 

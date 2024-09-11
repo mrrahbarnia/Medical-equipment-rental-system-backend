@@ -110,8 +110,9 @@ async def get_all_advertisement(
     is_deleted: Annotated[bool | None, Query(alias="isDeleted")] = None,
 ):
     response = await service.get_all_advertisement(
-        engine=engine, limit=pagination_info.limit, offset=pagination_info.offset,
-        phone_number=phone_number, published=published, is_deleted=is_deleted
+        engine=engine, limit=pagination_info.limit,
+        offset=pagination_info.offset, phone_number=phone_number,
+        published=published, is_deleted=is_deleted
     )
     return response
 
@@ -141,7 +142,7 @@ async def unpublish_advertisement(
 
 
 @router.delete(
-    "/delete-advertisement/",
+    "/delete-advertisement/{advertisement_id}",
     status_code=status.HTTP_204_NO_CONTENT
 )
 async def delete_advertisement(
@@ -166,3 +167,29 @@ async def get_advertisement(
         session=session, advertisement_id=advertisement_id
     )
     return result
+
+
+@router.get(
+        "/ban-user/{phone_number}/",
+        status_code=status.HTTP_200_OK
+)
+async def ban_user(
+    phone_number: PhoneNumber,
+    is_admin: Annotated[Literal[True], Depends(is_admin)],
+    session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)],
+) -> dict:
+    await service.ban_user(phone_number=phone_number, session=session)
+    return {"detail": "User banned successfully."}
+
+
+@router.get(
+        "/cancel-ban-user/{phone_number}/",
+        status_code=status.HTTP_200_OK
+)
+async def cancel_ban_user(
+    phone_number: PhoneNumber,
+    is_admin: Annotated[Literal[True], Depends(is_admin)],
+    session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)],
+) -> dict:
+    await service.cancel_ban_user(phone_number=phone_number, session=session)
+    return {"detail": "User ban status is set to False."}

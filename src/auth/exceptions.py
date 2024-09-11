@@ -44,6 +44,12 @@ class NotActiveUser(HTTPException):
         self.detail = "This account is not active"
 
 
+class UserIsBanned(HTTPException):
+    def __init__(self) -> None:
+        self.status_code = status.HTTP_400_BAD_REQUEST
+        self.detail = "This account is banned."
+
+
 class WrongOldPassword(HTTPException):
     def __init__(self) -> None:
         self.status_code = status.HTTP_400_BAD_REQUEST

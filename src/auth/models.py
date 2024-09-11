@@ -15,6 +15,7 @@ class User(Base):
     password: so.Mapped[str] = so.mapped_column()
     has_subscription_fee: so.Mapped[bool] = so.mapped_column(default=False)
     is_active: so.Mapped[bool] = so.mapped_column(default=False)
+    is_banned: so.Mapped[bool] = so.mapped_column(default=False)
     created_at: so.Mapped[datetime] = so.mapped_column(default=sa.func.now())
 
     def __repr__(self) -> str:

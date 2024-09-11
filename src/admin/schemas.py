@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import Field
 from typing import Annotated
 
 from src.schemas import CustomBaseModel
@@ -13,6 +13,7 @@ class Category(CustomBaseModel):
 
 
 class AllCategories(CustomBaseModel):
+    id: types.CategoryId
     name: str
     parent_name: Annotated[str | None, Field(alias="parentName")] = None
 
@@ -22,9 +23,10 @@ class UpdateCategoryIn(CustomBaseModel):
     parent_category_name: Annotated[str | None, Field(alias="parentCategoryName")] = None
 
 
-class AllAdvertisement(BaseModel):
+class AllAdvertisement(CustomBaseModel):
     id: types.AdvertisementId
-    phone_number: auth_types.PhoneNumber
+    phone_number: Annotated[auth_types.PhoneNumber, Field(alias="phoneNumber")]
+    is_banned: Annotated[bool, Field(alias="isBanned")]
     published: bool
     is_deleted: Annotated[bool, Field(alias="isDeleted", validation_alias="is_deleted")]
 
