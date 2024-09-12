@@ -66,7 +66,7 @@ async def all_categories(engine: AsyncEngine, limit: int, offset: int):
         sa.select(Category.id, Category.name, parent_category_name)
         .select_from(Category)
         .join(parent_category_table_name, Category.parent_category==parent_category_table_name.id, isouter=True)
-    )
+    ).order_by(Category.created_at.desc())
     return await paginate(engine=engine, query=query, limit=limit, offset=offset)
 
 
@@ -162,7 +162,7 @@ async def get_all_advertisement(
         Advertisement.id, Advertisement.published, Advertisement.is_deleted, User.phone_number, User.is_banned
     ).select_from(Advertisement).join(User, Advertisement.user_id==User.id).order_by(
         Advertisement.published, Advertisement.is_deleted.desc()
-    )
+    ).order_by(Advertisement.created_at.desc())
     if phone_number:
         query = query.where(User.phone_number==phone_number)
     if published or published is False:

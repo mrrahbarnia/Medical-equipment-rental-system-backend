@@ -1,18 +1,12 @@
-import re
-import os
 import asyncio
 import logging
 import sqlalchemy as sa
 
-from uuid import uuid4
-from typing import cast, BinaryIO
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-# from aiobotocore.session import get_session # type: ignore
 
 from src.auth import schemas
-# from src.config import settings
 from src.database import get_redis_connection
 from src.auth import exceptions
 from src.auth import utils

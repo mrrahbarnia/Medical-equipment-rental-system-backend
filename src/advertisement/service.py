@@ -125,7 +125,7 @@ async def get_published_advertisement(
         User, Advertisement.user_id==User.id
     ).where(sa.and_(
         Advertisement.published == True, Advertisement.is_deleted == False, User.is_banned == False # noqa
-    ))
+    )).order_by(Advertisement.created_at.desc())
     if text__icontains:
         query = query.where(sa.or_(
             Advertisement.title.ilike(f"%{text__icontains}%"),
