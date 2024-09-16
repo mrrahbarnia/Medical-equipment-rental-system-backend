@@ -1,7 +1,7 @@
 import json
 
 from decimal import Decimal
-from datetime import date
+from datetime import date, datetime
 from typing import Annotated, Self, Any
 from pydantic import BaseModel, ValidationInfo, Field, field_validator, model_validator
 
@@ -125,5 +125,24 @@ class ShowPhoneNumber(CustomBaseModel):
 
 
 class AdvertisementUpdate(AdvertisementIn):
-    previous_images: Annotated[list[str] | None, Field(validation_alias="previousImages")] = None
+    previous_images: Annotated[list[str], Field(validation_alias="previousImages")] = []
     previous_video: Annotated[str | None, Field(validation_alias="previousVideo")] = None
+
+
+class RecentAds(CustomBaseModel):
+    id: types.AdvertisementId
+    title: Annotated[str, Field(max_length=250)]
+    created_at: datetime
+    image_url: Annotated[str, Field(alias="imageUrl")]
+    category_name: Annotated[str, Field(alias="categoryName")]
+
+    @field_validator("image_url", mode="after")
+    @classmethod
+    def set_image_url(cls, url: str) -> str | None:
+        if url:
+            return f"{settings.S3_API}/{url}"
+        return None
+
+
+class MostViewedAds(RecentAds):
+    views: int

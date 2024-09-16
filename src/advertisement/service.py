@@ -1,4 +1,5 @@
 import os
+import json
 import sqlalchemy as sa
 import sqlalchemy.orm as so
 
@@ -450,3 +451,75 @@ async def update_my_advertisement(
 
     for image_unique_name, image_file in image_unique_names.items():
         await upload_to_s3(file=image_file, unique_filename=image_unique_name)
+
+
+async def get_most_viewed_ads(
+        session: async_sessionmaker[AsyncSession]
+):
+    redis = get_redis_connection()
+    cached_data = redis.get(name="most-viewed-ads")
+    if cached_data is not None:
+        return json.loads(cached_data) # type: ignore
+    subquery = sa.select(AdvertisementImage).distinct(AdvertisementImage.advertisement_id).subquery()
+    query = sa.select(
+        Advertisement.id, Advertisement.title, Advertisement.created_at, Advertisement.views,
+        Category.name.label("category_name"), subquery.c.url.label("image_url")
+    ).select_from(Advertisement).join(Category, Advertisement.category_id==Category.id).join(
+        subquery, Advertisement.id==subquery.c.advertisement_id
+    ).order_by(Advertisement.views.desc()).limit(15)
+
+    async with session.begin() as conn:
+        result = (await conn.execute(query)).all()
+
+    result_list = [
+        {
+            "id": str(ad.id),
+            "title": ad.title,
+            "created_at": ad.created_at.isoformat(),
+            "category_name": ad.category_name,
+            "image_url": ad.image_url,
+            "views": ad.views
+        }
+        for ad in result
+    ]
+    redis.set(
+        name="most-viewed-ads",
+        value=json.dumps(result_list),
+        ex=180
+    )
+    return result_list
+
+
+async def get_recent_ads(
+        session: async_sessionmaker[AsyncSession]
+):
+    redis = get_redis_connection()
+    cached_data = redis.get("recent-ads")
+    if cached_data is not None:
+        return json.loads(cached_data) # type: ignore
+    subquery = sa.select(AdvertisementImage).distinct(AdvertisementImage.advertisement_id).subquery()
+    query = sa.select(
+        Advertisement.id, Advertisement.title, Advertisement.created_at, Advertisement.views,
+        Category.name.label("category_name"), subquery.c.url.label("image_url")
+    ).select_from(Advertisement).join(Category, Advertisement.category_id==Category.id).join(
+        subquery, Advertisement.id==subquery.c.advertisement_id
+    ).order_by(Advertisement.category_id.desc()).limit(15)
+
+    async with session.begin() as conn:
+        result = (await conn.execute(query)).all()
+    
+    result_list = [
+        {
+            "id": str(ad.id),
+            "title": ad.title,
+            "created_at": ad.created_at.isoformat(),
+            "category_name": ad.category_name,
+            "image_url": ad.image_url,
+        } for ad in result
+    ]
+    redis.set(
+        name="recent-ads",
+        value=json.dumps(result_list),
+        ex=180
+    )
+    return result_list

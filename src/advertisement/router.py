@@ -1,4 +1,4 @@
-from typing import Annotated, Optional, Union
+from typing import Annotated
 
 from fastapi import APIRouter, status, UploadFile, File, Query, Depends
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession, AsyncEngine
@@ -157,3 +157,27 @@ async def update_my_advertisement(
         video=video,
         images=images
     )
+
+
+@router.get(
+    "/list/most-viewed-ads/",
+    status_code=status.HTTP_200_OK,
+    response_model=list[schemas.MostViewedAds]
+)
+async def get_most_viewed_ads(
+    session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)]
+):
+    result = await service.get_most_viewed_ads(session=session)
+    return result
+
+
+@router.get(
+    "/list/recent-ads/",
+    status_code=status.HTTP_200_OK,
+    response_model=list[schemas.RecentAds]
+)
+async def get_recent_ads(
+    session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)]
+):
+    result = await service.get_recent_ads(session=session)
+    return result
