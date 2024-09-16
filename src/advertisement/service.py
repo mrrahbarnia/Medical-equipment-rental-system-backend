@@ -464,9 +464,17 @@ async def get_most_viewed_ads(
     query = sa.select(
         Advertisement.id, Advertisement.title, Advertisement.created_at, Advertisement.views,
         Category.name.label("category_name"), subquery.c.url.label("image_url")
+    ).where(
+        sa.and_(
+            Advertisement.published.is_(True),
+            Advertisement.is_deleted.is_(False),
+            User.is_banned.is_not(True)
+        )
     ).select_from(Advertisement).join(Category, Advertisement.category_id==Category.id).join(
         subquery, Advertisement.id==subquery.c.advertisement_id
-    ).order_by(Advertisement.views.desc()).limit(15)
+    ).join(User, Advertisement.user_id==User.id).order_by(
+        Advertisement.views.desc()
+    ).limit(15)
 
     async with session.begin() as conn:
         result = (await conn.execute(query)).all()
@@ -501,9 +509,17 @@ async def get_recent_ads(
     query = sa.select(
         Advertisement.id, Advertisement.title, Advertisement.created_at, Advertisement.views,
         Category.name.label("category_name"), subquery.c.url.label("image_url")
+    ).where(
+        sa.and_(
+            Advertisement.published.is_(True),
+            Advertisement.is_deleted.is_(False),
+            User.is_banned.is_not(True)
+        )
     ).select_from(Advertisement).join(Category, Advertisement.category_id==Category.id).join(
         subquery, Advertisement.id==subquery.c.advertisement_id
-    ).order_by(Advertisement.category_id.desc()).limit(15)
+    ).join(User, Advertisement.user_id==User.id).order_by(
+        Advertisement.created_at.desc()
+    ).limit(15)
 
     async with session.begin() as conn:
         result = (await conn.execute(query)).all()

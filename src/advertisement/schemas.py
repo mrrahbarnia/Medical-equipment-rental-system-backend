@@ -132,7 +132,7 @@ class AdvertisementUpdate(AdvertisementIn):
 class RecentAds(CustomBaseModel):
     id: types.AdvertisementId
     title: Annotated[str, Field(max_length=250)]
-    created_at: datetime
+    created_at: Annotated[datetime, Field(alias="createdAt")]
     image_url: Annotated[str, Field(alias="imageUrl")]
     category_name: Annotated[str, Field(alias="categoryName")]
 
