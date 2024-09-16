@@ -141,6 +141,21 @@ async def unpublish_advertisement(
     await service.unpublish_advertisement(session=session, advertisement_id=advertisement_id)
 
 
+@router.patch(
+        "/admin-comment/{advertisement_id}/",
+        status_code=status.HTTP_204_NO_CONTENT
+)
+async def advertisement_comment(
+    payload: schemas.AdvertisementComment,
+    advertisement_id: AdvertisementId,
+    is_admin: Annotated[Literal[True], Depends(is_admin)],
+    session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)],
+) -> None:
+    await service.advertisement_comment(
+        session=session, advertisement_id=advertisement_id, comment=payload.admin_comment
+    )
+
+
 @router.delete(
     "/delete-advertisement/{advertisement_id}",
     status_code=status.HTTP_204_NO_CONTENT

@@ -1,7 +1,6 @@
-from typing import Annotated
+from typing import Annotated, Optional, Union
 
-from datetime import date
-from fastapi import APIRouter, status, UploadFile, Form, Query, Depends
+from fastapi import APIRouter, status, UploadFile, File, Query, Depends
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession, AsyncEngine
 
 from src.database import get_session, get_engine
@@ -116,5 +115,45 @@ async def show_phone_number(
     current_user: Annotated[User, Depends(get_current_active_user)],
     session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)],
 ) -> dict:
-    phone_number = await service.show_phone_number(session=session, user=current_user, advertisement_id=advertisement_id)
+    phone_number = await service.show_phone_number(
+        session=session, user=current_user, advertisement_id=advertisement_id
+    )
     return {"phoneNumber": phone_number}
+
+
+@router.get(
+    "/get-my-advertisement/{advertisement_id}/",
+    status_code=status.HTTP_200_OK,
+    response_model=schemas.AdvertisementDetail
+)
+async def get_my_advertisement(
+    advertisement_id: AdvertisementId,
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)],
+) -> dict:
+    result = await service.get_my_advertisement(
+        session=session, user=current_user, advertisement_id=advertisement_id
+    )
+    return result
+
+
+@router.put(
+    "/update-my-advertisement/{advertisement_id}/",
+    status_code=status.HTTP_204_NO_CONTENT
+)
+async def update_my_advertisement(
+    advertisement_id: AdvertisementId,
+    payload: schemas.AdvertisementUpdate,
+    session: Annotated[async_sessionmaker[AsyncSession], Depends(get_session)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    video: UploadFile | None = None,
+    images: Annotated[list[UploadFile], File()] = None # type: ignore
+) -> None:
+    await service.update_my_advertisement(
+        session=session,
+        advertisement_id=advertisement_id,
+        user=current_user,
+        payload=payload,
+        video=video,
+        images=images
+    )

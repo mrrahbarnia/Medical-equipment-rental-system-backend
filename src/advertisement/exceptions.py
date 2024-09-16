@@ -64,6 +64,24 @@ class AdvertisementNotFound(HTTPException):
         self.detail = "Advertisement not found!"
 
 
+class AtLeastOneImageExc(HTTPException):
+    def __init__(self) -> None:
+        self.status_code = status.HTTP_400_BAD_REQUEST
+        self.detail = "Advertisement must has at least one image!"
+
+
+class AdvertisementNotOwner(HTTPException):
+    def __init__(self) -> None:
+        self.status_code = status.HTTP_404_NOT_FOUND
+        self.detail = "You only can get advertisement which is your's,not deleted before and has admin_comment!"
+
+
+class UpdateMyAdException(HTTPException):
+    def __init__(self) -> None:
+        self.status_code = status.HTTP_404_NOT_FOUND
+        self.detail = "You only can update advertisement which is your's,not deleted before and has admin_comment!"
+
+
 class DailyRateLimit(HTTPException):
     def __init__(self) -> None:
         self.status_code = status.HTTP_403_FORBIDDEN

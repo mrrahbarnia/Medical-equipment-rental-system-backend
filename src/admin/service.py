@@ -201,8 +201,8 @@ async def get_advertisement(
         advertisement_id: AdvertisementId
 ) -> dict:
     query = sa.select(
-        Advertisement.id, Advertisement.title, Advertisement.description, Advertisement.video,
-        Advertisement.place, Advertisement.hour_price, Advertisement.day_price,
+        Advertisement.id, Advertisement.title, Advertisement.description, Advertisement.admin_comment,
+        Advertisement.video, Advertisement.place, Advertisement.hour_price, Advertisement.day_price,
         Advertisement.week_price, Advertisement.month_price, Advertisement.published,
         Advertisement.is_deleted, AdvertisementImage.url, User.phone_number,
         Calendar.day, Category.name.label("category_name")
@@ -225,7 +225,7 @@ async def get_advertisement(
         "id": result[0].id, "title": result[0].title, "description": result[0].description, "video": result[0].video,
         "place": result[0].place, "hour_price": result[0].hour_price, "day_price": result[0].day_price,
         "week_price": result[0].week_price, "month_price": result[0].month_price,
-        "image_urls": set([image.url for image in result]),
+        "image_urls": set([image.url for image in result]), "admin_comment": result[0].admin_comment,
         "phone_number": result[0].phone_number, "published": result[0].published,
         "days": set([d.day for d in result]), "is_deleted": result[0].is_deleted,
         "category_name": result[0].category_name
@@ -259,3 +259,22 @@ async def cancel_ban_user(
         user_id: UserId | None = await conn.scalar(query)
     if not user_id:
         raise UserNotFound
+
+
+async def advertisement_comment(
+        advertisement_id: AdvertisementId,
+        session: async_sessionmaker[AsyncSession],
+        comment: str
+) -> None:
+    query = sa.update(Advertisement).where(
+        Advertisement.id==advertisement_id
+    ).values(
+        {
+            Advertisement.admin_comment: comment,
+            Advertisement.published: False
+        }
+    ).returning(Advertisement.id)
+    async with session.begin() as conn:
+        result: AdvertisementId | None = await conn.scalar(query)
+    if not result:
+        raise AdvertisementNotFound

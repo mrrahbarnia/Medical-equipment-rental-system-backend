@@ -1,3 +1,4 @@
+import httpx
 import asyncio
 import logging
 import sqlalchemy as sa
@@ -18,7 +19,13 @@ logger = logging.getLogger("auth")
 
 
 async def send_message(phone_number: PhoneNumber, subject: str):
-    # TODO: Sending message
+    header = {"token": auth_config.SMS_TOKEN}
+    json = {"from": auth_config.SMS_FROM, "recipients": [phone_number], "message": subject}
+    async with httpx.AsyncClient() as client:
+        r = await client.post(auth_config.SMS_URL, json=json, headers=header)
+    if r.status_code != 200:
+        logger.error("SMS service doesn't work correctly!")
+    # TODO: Delete this part for production
     await asyncio.sleep(5)
     logger.warning(f"Sending {subject} to {phone_number}...")
 

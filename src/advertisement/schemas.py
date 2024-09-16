@@ -80,6 +80,7 @@ class MyAdvertisement(BaseModel):
     views: int
     image: str | None = None
     published: bool
+    admin_comment: Annotated[str | None, Field(serialization_alias="adminComment")]
 
     @field_validator("image", mode="after")
     @classmethod
@@ -121,3 +122,8 @@ class AdvertisementDetail(CustomBaseModel):
 
 class ShowPhoneNumber(CustomBaseModel):
     phone_number: Annotated[PhoneNumber, Field(alias="phoneNumber")]
+
+
+class AdvertisementUpdate(AdvertisementIn):
+    previous_images: Annotated[list[str] | None, Field(validation_alias="previousImages")] = None
+    previous_video: Annotated[str | None, Field(validation_alias="previousVideo")] = None

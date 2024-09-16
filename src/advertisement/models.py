@@ -25,6 +25,7 @@ class Advertisement(Base):
     day_price: so.Mapped[Price | None]
     week_price: so.Mapped[Price | None]
     month_price: so.Mapped[Price | None]
+    admin_comment: so.Mapped[str | None] = so.mapped_column(sa.Text, default=None)
     published: so.Mapped[bool] = so.mapped_column(default=False)
     is_deleted: so.Mapped[bool] = so.mapped_column(default=False)
     created_at: so.Mapped[datetime] = so.mapped_column(default=sa.func.now())

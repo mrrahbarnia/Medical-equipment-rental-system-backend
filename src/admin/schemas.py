@@ -34,3 +34,8 @@ class AllAdvertisement(CustomBaseModel):
 class AdvertisementDetail(UsersAdvertisementDetail):
     published: bool
     is_deleted: Annotated[bool, Field(alias="isDeleted")]
+    admin_comment: Annotated[str | None, Field(serialization_alias="adminComment")] = None
+
+
+class AdvertisementComment(CustomBaseModel):
+    admin_comment: Annotated[str, Field(alias="adminComment")]
