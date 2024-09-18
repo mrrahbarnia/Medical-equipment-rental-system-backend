@@ -92,3 +92,9 @@ class HourlyRateLimit(HTTPException):
     def __init__(self) -> None:
         self.status_code = status.HTTP_403_FORBIDDEN
         self.detail = f"Hourly rate limit exceeded!({settings.REQUEST_PER_HOUR} PER HOUR)"
+
+
+class AddressApiException(HTTPException):
+    def __init__(self) -> None:
+        self.status_code = status.HTTP_400_BAD_REQUEST
+        self.detail = "Address API doesn't work,please write address manually!"

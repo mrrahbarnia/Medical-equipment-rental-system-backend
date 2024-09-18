@@ -34,7 +34,7 @@ async def add_advertisement(
         images=images
     )
     return {
-        "title": payload.title, "description": payload.description, "place": payload.place
+        "title": payload.title, "description": payload.description
     }
 
 

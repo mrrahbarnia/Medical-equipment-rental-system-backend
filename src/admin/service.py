@@ -203,7 +203,7 @@ async def get_advertisement(
     query = sa.select(
         Advertisement.id, Advertisement.title, Advertisement.description, Advertisement.admin_comment,
         Advertisement.video, Advertisement.place, Advertisement.hour_price, Advertisement.day_price,
-        Advertisement.week_price, Advertisement.month_price, Advertisement.published,
+        Advertisement.week_price, Advertisement.month_price, Advertisement.published, Advertisement.lat_lon,
         Advertisement.is_deleted, AdvertisementImage.url, User.phone_number,
         Calendar.day, Category.name.label("category_name")
     ).select_from(Advertisement).join(
@@ -226,7 +226,7 @@ async def get_advertisement(
         "place": result[0].place, "hour_price": result[0].hour_price, "day_price": result[0].day_price,
         "week_price": result[0].week_price, "month_price": result[0].month_price,
         "image_urls": set([image.url for image in result]), "admin_comment": result[0].admin_comment,
-        "phone_number": result[0].phone_number, "published": result[0].published,
+        "phone_number": result[0].phone_number, "published": result[0].published, "lat_lon": result[0].lat_lon,
         "days": set([d.day for d in result]), "is_deleted": result[0].is_deleted,
         "category_name": result[0].category_name
     }

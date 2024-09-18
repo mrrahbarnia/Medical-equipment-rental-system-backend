@@ -14,12 +14,13 @@ from src.auth.types import PhoneNumber
 class AdvertisementOut(CustomBaseModel):
     title: Annotated[str, Field(max_length=250)]
     description: str
-    place: str
 
 
 class AdvertisementIn(AdvertisementOut):
     category_name: Annotated[str, Field(alias="categoryName")]
     days: list[date]
+    place: str | None = None
+    lat_lon: Annotated[list[float] | None, Field(alias="latLon")] = None
     hour_price: Annotated[Decimal | None, Field(alias="hourPrice")] = None
     day_price: Annotated[Decimal | None, Field(alias="dayPrice")] = None
     week_price: Annotated[Decimal | None, Field(alias="weekPrice")] = None
@@ -31,6 +32,12 @@ class AdvertisementIn(AdvertisementOut):
         if isinstance(value, str):
             return cls(**json.loads(value))
         return value
+
+    @model_validator(mode="after")
+    def validate_address(self) -> Self:
+        if ((self.place is None or self.place == "")and self.lat_lon is None):
+            raise ValueError("Couldn't leave place and lat_lon empty.")
+        return self
 
     @model_validator(mode="after")
     def validate_prices(self) -> Self:
@@ -96,6 +103,7 @@ class AdvertisementDetail(CustomBaseModel):
     description: str
     video: str | None = None
     place: str
+    lat_lon: Annotated[list[float] | None, Field(alias="latLon")] = None
     hour_price: Annotated[Decimal | None, Field(alias="hourPrice", default=None)]
     day_price: Annotated[Decimal | None, Field(alias="dayPrice", default=None)]
     week_price: Annotated[Decimal | None, Field(alias="weekPrice", default=None)]

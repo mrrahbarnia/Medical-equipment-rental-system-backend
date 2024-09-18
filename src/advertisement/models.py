@@ -19,6 +19,7 @@ class Advertisement(Base):
     title: so.Mapped[str] = so.mapped_column(sa.String(250), index=True)
     description: so.Mapped[str] = so.mapped_column(sa.Text)
     place: so.Mapped[str] = so.mapped_column(sa.Text)
+    lat_lon: so.Mapped[list[float] | None] = so.mapped_column(default=None)
     views: so.Mapped[int] = so.mapped_column(default=0)
     video: so.Mapped[str | None] = so.mapped_column(sa.String(255))
     hour_price: so.Mapped[Price | None]

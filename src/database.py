@@ -3,7 +3,7 @@ from redis import Redis
 from datetime import datetime
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import MetaData
-from sqlalchemy.types import DateTime, INTEGER, String, UUID, Numeric
+from sqlalchemy.types import DateTime, INTEGER, String, UUID, Numeric, ARRAY
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine, async_sessionmaker, AsyncSession
 
 from src.constants import DB_NAMING_CONVENTION
@@ -29,6 +29,7 @@ class Base(DeclarativeBase):
         advertisement_types.CalendarId: INTEGER,
         advertisement_types.AdvertisementImageId: INTEGER,
         ticket_types.TicketId: INTEGER,
+        list[float]: ARRAY(item_type=Numeric),
         datetime: DateTime(timezone=True),
     }
 

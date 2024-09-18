@@ -1,3 +1,4 @@
+import httpx
 import os
 import json
 import sqlalchemy as sa
@@ -56,6 +57,17 @@ async def add_advertisement(
             User.has_subscription_fee: False
         }
     )
+    header = {"x-api-key": advertisement_settings.ADDRESS_TOKEN}
+    if payload.lat_lon:
+        lat = payload.lat_lon[0]
+        lon = payload.lat_lon[1]
+        url = f"{advertisement_settings.ADDRESS_API_URL}lat={lat}&lon={lon}"
+        async with httpx.AsyncClient() as client:
+            r = await client.get(url, headers=header)
+        if r.status_code == 200:
+            address = r.json()["address"]
+        else:
+            raise exceptions.AddressApiException
     async with session.begin() as conn:
         category_id: types.CategoryId | None = await conn.scalar(category_query)
         if not category_id:
@@ -64,7 +76,8 @@ async def add_advertisement(
                 {
                     Advertisement.title: payload.title,
                     Advertisement.description: payload.description,
-                    Advertisement.place: payload.place,
+                    Advertisement.place: payload.place if payload.place else address,
+                    Advertisement.lat_lon: payload.lat_lon,
                     Advertisement.video: unique_video_filename if video else None,
                     Advertisement.hour_price: payload.hour_price if payload.hour_price else None,
                     Advertisement.day_price: payload.day_price if payload.day_price else None,
@@ -216,7 +229,7 @@ async def get_advertisement(
     )
     query = sa.select(
         Advertisement.id, Advertisement.title, Advertisement.description, Advertisement.video,
-        Advertisement.place, Advertisement.hour_price, Advertisement.day_price,
+        Advertisement.place, Advertisement.hour_price, Advertisement.day_price, Advertisement.lat_lon,
         Advertisement.week_price, Advertisement.month_price, AdvertisementImage.url,
         User.phone_number, Calendar.day, Category.name.label("category_name")
     ).select_from(Advertisement).join(
@@ -237,7 +250,7 @@ async def get_advertisement(
     return {
         "id": result[0].id, "title": result[0].title, "description": result[0].description, "video": result[0].video,
         "place": result[0].place, "hour_price": result[0].hour_price, "day_price": result[0].day_price,
-        "week_price": result[0].week_price, "month_price": result[0].month_price,
+        "week_price": result[0].week_price, "month_price": result[0].month_price, "lat_lon": result[0].lat_lon,
         "image_urls": set([image.url for image in result]),
         "days": set([d.day for d in result]),
         "category_name": result[0].category_name
@@ -288,7 +301,7 @@ async def get_my_advertisement(
 ) -> dict:
     query = sa.select(
         Advertisement.id, Advertisement.title, Advertisement.description, Advertisement.video,
-        Advertisement.place, Advertisement.hour_price, Advertisement.day_price,
+        Advertisement.place, Advertisement.hour_price, Advertisement.day_price, Advertisement.lat_lon,
         Advertisement.week_price, Advertisement.month_price, AdvertisementImage.url,
         User.phone_number, Calendar.day, Category.name.label("category_name")
     ).select_from(Advertisement).join(
@@ -309,7 +322,7 @@ async def get_my_advertisement(
         "id": result[0].id, "title": result[0].title, "description": result[0].description, "video": result[0].video,
         "place": result[0].place, "hour_price": result[0].hour_price, "day_price": result[0].day_price,
         "week_price": result[0].week_price, "month_price": result[0].month_price,
-        "image_urls": set([image.url for image in result]),
+        "image_urls": set([image.url for image in result]), "lat_lon": result[0].lat_lon,
         "days": set([d.day for d in result]),
         "category_name": result[0].category_name
     }
@@ -366,6 +379,19 @@ async def update_my_advertisement(
 
     category_query = sa.select(Category.id).where(Category.name==payload.category_name)
 
+    header = {"x-api-key": advertisement_settings.ADDRESS_TOKEN}
+    if payload.lat_lon:
+        lat = payload.lat_lon[0]
+        lon = payload.lat_lon[1]
+        url = f"{advertisement_settings.ADDRESS_API_URL}lat={lat}&lon={lon}"
+        async with httpx.AsyncClient() as client:
+            r = await client.get(url, headers=header)
+        if r.status_code == 200:
+            address = r.json()["address"]
+        else:
+            raise exceptions.AddressApiException
+
+    new_video_file_name = None
     if video:
         new_video_file_name = unique_video_filename
     elif not video and payload.previous_video:
@@ -404,7 +430,8 @@ async def update_my_advertisement(
             {
                 Advertisement.title: payload.title,
                 Advertisement.description: payload.description,
-                Advertisement.place: payload.place,
+                Advertisement.place: address if payload.lat_lon else payload.place,
+                Advertisement.lat_lon: payload.lat_lon,
                 Advertisement.video: new_video_file_name if new_video_file_name else None,
                 Advertisement.hour_price: payload.hour_price if payload.hour_price else None,
                 Advertisement.day_price: payload.day_price if payload.day_price else None,
