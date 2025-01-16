@@ -7,12 +7,7 @@ services:
       context: .
       dockerfile: ./Dockerfile.dev
     container_name: app
-    command: >
-      sh -c "
-            uvicorn src.main:app --host=0.0.0.0 --reload
-            alembic revision --autogenerate -m "init"
-            alembic upgrade head
-          "
+    command: uvicorn src.main:app --host=0.0.0.0 --reload
     ports:
       - '8000:8000'
     env_file:
@@ -22,11 +17,13 @@ services:
       - ./alembic:/alembic/
       - ./tests:/tests/
     depends_on:
-      - dev-db
+      - db
       - redis
     restart: always
+    networks:
+      - net
 
-  dev-db:
+  db:
     image: postgres:16.1-alpine3.19
     restart: always
     env_file:
@@ -35,24 +32,21 @@ services:
       - "5432:5432"
     volumes:
       - devdb-volume:/var/lib/postgresql/data
-  
-  test-db:
-    image: postgres:16.1-alpine3.19
-    restart: always
-    environment:
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_USER=postgres
-      - POSTGRES_DB=postgres
-    ports:
-      - "5433:5432"
-    volumes:
-      - testdb-volume:/var/lib/postgresql/data
+    networks:
+      - net
 
-  adminer:
-    image: adminer
-    restart: always
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin_container
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
     ports:
-      - "8080:8080"
+      - "8080:80"
+    depends_on:
+      - db
+    networks:
+      - net
 
   redis:
     image: redis:7.2-alpine    
@@ -61,10 +55,13 @@ services:
       - "6379:6379"
     volumes:
       - redis-volume:/data
+    networks:
+      - net
 
 
-name: development
+name: medical-development
 volumes:
   devdb-volume:
   redis-volume:
-  testdb-volume:
+networks:
+  net:

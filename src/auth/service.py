@@ -19,15 +19,13 @@ logger = logging.getLogger("auth")
 
 
 async def send_message(phone_number: PhoneNumber, subject: str):
-    header = {"token": auth_config.SMS_TOKEN}
-    json = {"from": auth_config.SMS_FROM, "recipients": [phone_number], "message": subject}
+    sms_service_url = f"{auth_config.SMS_URL}/{auth_config.SMS_URL}/sms/send.json?receptor=09134191562?sender=20006535&message=123456"
     async with httpx.AsyncClient() as client:
-        r = await client.post(auth_config.SMS_URL, json=json, headers=header)
+        r = await client.post(sms_service_url)
+        # TODO: Fix this
+        print(r)
     if r.status_code != 200:
         logger.error("SMS service doesn't work correctly!")
-    # TODO: Delete this part for production
-    await asyncio.sleep(5)
-    logger.warning(f"Sending {subject} to {phone_number}...")
 
 
 async def get_user_by_id(id: UserId, session: async_sessionmaker[AsyncSession]) -> User:
@@ -36,7 +34,7 @@ async def get_user_by_id(id: UserId, session: async_sessionmaker[AsyncSession]) 
         user = (await conn.execute(query)).first()
     if not user:
         raise exceptions.UserNotFound
-    
+
     return user._tuple()[0]
 
 

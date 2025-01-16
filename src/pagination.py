@@ -5,8 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from pydantic import BaseModel
 from typing import TypeVar, Generic, Annotated
 
-from src.database import get_engine
-
 T = TypeVar("T")
 
 
